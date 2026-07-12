@@ -26,7 +26,11 @@ If none apply, classify as `minor`.
 At minimum, update:
 
 1. `docs/design/high-level/design_01.md` for architecture and flow impact.
-2. One or more of `design_02.md` to `design_05.md` depending on impact area.
+2. One or more domain documents depending on impact area:
+   - `docs/design/high-level/20-deployment/`
+   - `docs/design/high-level/30-security/`
+   - `docs/design/high-level/40-ops/`
+   - `docs/design/high-level/50-roadmap/`
 3. `docs/design/high-level/README.md` if reading order or scope changed.
 
 ## Merge Gate Rule

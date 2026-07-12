@@ -4,6 +4,12 @@
 
 This document defines the enterprise security posture for the platform, including identity, data isolation, policy enforcement, supply-chain controls, and auditability.
 
+### Security Mandate
+
+- Zero-trust is mandatory and non-optional across all platform layers.
+- Every request must be explicitly authenticated, authorized, encrypted, and continuously evaluated regardless of source network.
+- Security controls must align with current enterprise best practices and be periodically uplifted as standards evolve.
+
 ## 2. Trust Boundaries
 
 - Boundary A: External client to ingress/API gateway.
@@ -19,6 +25,7 @@ All boundaries enforce encryption in transit and policy checks.
 ### 3.1 Human Identity
 
 - OIDC federation with enterprise IdP.
+- Supported enterprise SSO providers include Microsoft Entra ID (Azure AD), Active Directory Federation Services, Okta, and equivalent standards-compliant IdPs.
 - Group/role claims mapped to platform RBAC roles.
 - Mandatory MFA and conditional access policies at IdP layer.
 
@@ -66,6 +73,22 @@ No static secrets in images, manifests, or workflow definitions.
   - default blocked egress
   - explicit allow-list for approved SaaS and enterprise APIs
 - Web application firewall and bot control at edge ingress.
+
+## 6.2 Zero-Trust Control Requirements
+
+- Identity-aware proxy and policy enforcement point at ingress and service-to-service boundaries.
+- Continuous verification of workload identity (SPIFFE/SPIRE or equivalent) for east-west traffic.
+- Least-privilege authorization with deny-by-default policy posture.
+- Device/user/session risk signals from enterprise IdP must be enforceable at API gateway policy layer.
+- Just-in-time privileged access for operational actions, with full audit and expiry.
+- Cryptographic agility plan for key rotation, algorithm updates, and certificate lifecycle automation.
+
+## 6.1 REST API Security and Governance
+
+- REST API-first is the default integration standard for platform and connector interfaces.
+- Every REST API must enforce OAuth2/OIDC-based authentication and RBAC authorization decisions.
+- API contracts must be versioned and documented with OpenAPI.
+- API gateway policy must enforce rate limiting, request validation, and audit tagging for all external and partner integrations.
 
 ## 7. Supply Chain Security
 
@@ -128,3 +151,4 @@ Every hosted MCP server must satisfy:
 - Namespace network default deny enabled.
 - MCP connector certification gate enabled.
 - Audit pipeline validated end-to-end.
+- Zero-trust policy enforcement validated for north-south and east-west traffic.

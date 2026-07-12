@@ -10,7 +10,11 @@ Use this checklist for every PR that touches code, infrastructure, or platform b
 ## Mandatory for Major Changes
 
 - [ ] `docs/design/high-level/design_01.md` updated for architecture impact.
-- [ ] Relevant companion docs updated (`design_02.md` to `design_05.md`).
+- [ ] Relevant companion docs updated under:
+	- `docs/design/high-level/20-deployment/`
+	- `docs/design/high-level/30-security/`
+	- `docs/design/high-level/40-ops/`
+	- `docs/design/high-level/50-roadmap/`
 - [ ] Data flow or trust boundary diagrams updated if behavior changed.
 - [ ] Day-2 operations impacts documented (SLO, observability, security, HA/DR).
 

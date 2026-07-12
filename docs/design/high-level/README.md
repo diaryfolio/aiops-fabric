@@ -2,18 +2,32 @@
 
 This folder contains the enterprise AI platform high-level technical design set.
 
-## Documents
+## Structure
 
-1. `design_01.md` - Core architecture blueprint and component strategy.
-2. `design_02.md` - Multi-cloud Kubernetes deployment topology and sizing model.
-3. `design_03.md` - Security, governance, and isolation model.
-4. `design_04.md` - Day-2 operations, SRE model, and reliability runbook baseline.
-5. `design_05.md` - Phased implementation roadmap and platform maturity model.
+1. Top-level anchor documents (`design_0x.md`) provide entry points and cross-cutting views.
+2. Modular design units under numbered domain folders (for example `10-overall/`) keep topics focused and LLM-readable.
+
+## Top-Level Documents
+
+1. `design_01.md` - Top-level design index and hierarchy map.
+
+## Modular Documents
+
+1. `10-overall/01-objective-principles.md`
+2. `10-overall/02-runtime-topology-flow.md`
+3. `10-overall/03-api-integration-standards.md`
+4. `10-overall/04-component-breakdown.md`
+5. `10-overall/05-operations-and-roadmap.md`
+6. `20-deployment/01-deployment-topology-sizing.md`
+7. `30-security/01-zero-trust.md`
+8. `40-ops/01-day2-operations-sre.md`
+9. `50-roadmap/01-roadmap-maturity.md`
 
 ## Intended Reading Order
 
-1. Start with `design_01.md` for the architecture baseline.
-2. Continue with `design_02.md` to map runtime choices into cluster topology.
-3. Review `design_03.md` before production onboarding.
-4. Use `design_04.md` for operational readiness and incident handling.
-5. Use `design_05.md` for delivery planning and governance milestones.
+1. Start with `design_01.md` for navigation and naming rules.
+2. Read modular docs in sequence (`10-overall/01` to `10-overall/05`) for architecture baseline.
+3. Continue with `20-deployment/01` for deployment topology and sizing.
+4. Review `30-security/01` before production onboarding.
+5. Use `40-ops/01` for operational readiness and incident handling.
+6. Use `50-roadmap/01` for delivery planning and governance milestones.

@@ -24,10 +24,11 @@ Use this template in PR descriptions for major changes.
 ## 4. Design Documents Updated
 
 - `docs/design/high-level/design_01.md`:
-- `docs/design/high-level/design_02.md`:
-- `docs/design/high-level/design_03.md`:
-- `docs/design/high-level/design_04.md`:
-- `docs/design/high-level/design_05.md`:
+- `docs/design/high-level/10-overall/`:
+- `docs/design/high-level/20-deployment/`:
+- `docs/design/high-level/30-security/`:
+- `docs/design/high-level/40-ops/`:
+- `docs/design/high-level/50-roadmap/`:
 
 ## 5. Operational Impact
 
