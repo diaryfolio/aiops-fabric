@@ -1,4 +1,4 @@
-# Enterprise AI Platform on Kubernetes - Technical System Design 05
+# LatticeCore Platform on Kubernetes - Technical System Design 05
 
 ## 1. Implementation Roadmap
 

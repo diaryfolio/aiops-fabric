@@ -1,4 +1,4 @@
-# Enterprise AI Platform on Kubernetes - Technical System Design 02
+# LatticeCore Platform on Kubernetes - Technical System Design 02
 
 ## 1. Deployment Topology (Multi-Cloud)
 

@@ -1,2 +1,4 @@
 # aiops-fabric
-Plug-and-play, infrastructure-agnostic Enterprise AI Platform
+Brand: LatticeCore Platform
+
+Plug-and-play, infrastructure-agnostic enterprise AI platform.
