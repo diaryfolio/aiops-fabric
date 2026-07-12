@@ -4,6 +4,10 @@
 
 This document defines the enterprise security posture for the platform, including identity, data isolation, policy enforcement, supply-chain controls, and auditability.
 
+### Concept Alignment
+
+Security controls in this document apply to the canonical flow `Enterprise User or App -> API Gateway and Auth -> Fabric Layer` and all Fabric services (AI Orchestrator, Workflow Engine, LLM Gateway and Inference, Memory and RAG, MCP Runtime).
+
 ### Security Mandate
 
 - Zero-trust is mandatory and non-optional across all platform layers.

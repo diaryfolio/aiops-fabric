@@ -2,6 +2,14 @@
 
 This folder contains the enterprise AI platform high-level technical design set.
 
+## Canonical Architecture Concept
+
+All high-level design documents use the same baseline concept:
+
+`Enterprise User or App -> API Gateway and Auth -> Fabric Layer`
+
+Fabric Layer services include AI Orchestrator, Workflow Engine, LLM Gateway and Inference, Memory and RAG, and MCP Runtime. Security and Zero Trust plus Observability are cross-cutting controls applied to all Fabric services.
+
 ## Structure
 
 1. Top-level anchor documents (`design_0x.md`) provide entry points and cross-cutting views.

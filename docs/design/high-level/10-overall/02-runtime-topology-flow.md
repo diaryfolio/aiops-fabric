@@ -4,26 +4,34 @@
 
 ```mermaid
 flowchart LR
-    U[Enterprise User / App / Agent] --> IGW[Ingress + API Gateway\nOIDC/OAuth2 + WAF + Rate Limits]
-    IGW --> ORCH[AI Orchestrator API\nSession, Policy, Routing]
+    U[Enterprise User or App] --> G[API Gateway and Auth]
+    G --> F
 
-    ORCH --> WF[Workflow Engine\nn8n or Tines]
-    ORCH --> MEM[Context Service\nRAG + Memory Policies]
-    ORCH --> LLMGW[LLM Gateway\nOpenAI-Compatible API]
+    subgraph F[Fabric Layer]
+        O[AI Orchestrator]
+        W[Workflow Engine]
+        L[LLM Gateway and Inference]
+        M[Memory and RAG]
+        X[MCP Runtime]
+    end
 
-    WF --> MCPRT[MCP Runtime Layer\nHosted MCP Servers]
-    MCPRT --> DS[Enterprise Systems\nDBs, SaaS, Internal APIs]
+    O --> W
+    O --> L
+    O --> M
+    W --> X
+    X --> E[Enterprise Systems and APIs]
 
-    MEM --> VDB[Vector DB Cluster\nQdrant/Milvus/pgvector]
-    MEM --> META[Metadata + Catalog Store\nPostgreSQL/Object Store]
-    MEM --> REDIS[Redis Cache\nContext + Embeddings Cache]
+    SEC[Security and Zero Trust] -.-> O
+    SEC -.-> W
+    SEC -.-> L
+    SEC -.-> M
+    SEC -.-> X
 
-    LLMGW --> INF[Inference Layer\nvLLM/Ollama/Triton]
-    INF --> GPU[GPU Node Pools\nKEDA/Knative Autoscaling]
-
-    ORCH --> MQ[Queue Bus\nNATS/Kafka/RabbitMQ]
-    WF --> MQ
-    MEM --> MQ
+    OBS[Observability] -.-> O
+    OBS -.-> W
+    OBS -.-> L
+    OBS -.-> M
+    OBS -.-> X
 ```
 
 ## End-to-End Request Flow

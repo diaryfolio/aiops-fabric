@@ -1,5 +1,11 @@
 # Design 10.3 - API and Integration Standards
 
+## Concept Alignment
+
+This standard applies to the canonical flow `Enterprise User or App -> API Gateway and Auth -> Fabric Layer`.
+
+All Fabric services (AI Orchestrator, Workflow Engine, LLM Gateway and Inference, Memory and RAG, MCP Runtime) must implement these API and integration rules.
+
 ## REST API-First Mandate
 
 - All platform and connector integrations must expose REST APIs as the primary interface.

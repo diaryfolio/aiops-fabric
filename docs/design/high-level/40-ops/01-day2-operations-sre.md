@@ -4,6 +4,12 @@
 
 This document defines how the platform is operated in production, including observability, reliability engineering, release safety, and incident handling.
 
+## 1.1 Concept Alignment
+
+Operational controls in this document assume the canonical flow `Enterprise User or App -> API Gateway and Auth -> Fabric Layer`.
+
+Observability and Security and Zero Trust are cross-cutting controls for every Fabric service and all runtime environments.
+
 ## 2. SLO Framework
 
 Define SLOs per service class:

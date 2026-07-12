@@ -4,6 +4,12 @@
 
 This document provides a phased delivery plan from platform bootstrap to enterprise-scale operations.
 
+## 1.1 Concept Alignment
+
+Roadmap phases are planned around the canonical architecture flow `Enterprise User or App -> API Gateway and Auth -> Fabric Layer`.
+
+Each phase must preserve this model and enforce cross-cutting Security and Zero Trust plus Observability across all Fabric services.
+
 ## 2. Phase Plan
 
 ## Phase 0 - Platform Bootstrap (Weeks 0-4)

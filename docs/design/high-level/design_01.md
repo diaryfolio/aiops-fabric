@@ -4,6 +4,14 @@
 
 This file is intentionally lightweight. Detailed content is split into modular design files so architecture remains readable, maintainable, and easy for LLM-driven workflows to consume.
 
+## Canonical Architecture Concept
+
+`Enterprise User or App -> API Gateway and Auth -> Fabric Layer`
+
+Fabric Layer services: AI Orchestrator, Workflow Engine, LLM Gateway and Inference, Memory and RAG, MCP Runtime.
+
+Cross-cutting controls across all Fabric services: Security and Zero Trust, Observability.
+
 ## Design Hierarchy
 
 Top level:

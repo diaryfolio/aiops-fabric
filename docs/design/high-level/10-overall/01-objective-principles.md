@@ -4,6 +4,14 @@
 
 Defines the architectural intent and non-negotiable principles for LatticeCore® Platform.
 
+## Concept Alignment
+
+Canonical flow: `Enterprise User or App -> API Gateway and Auth -> Fabric Layer`.
+
+Fabric Layer services: AI Orchestrator, Workflow Engine, LLM Gateway and Inference, Memory and RAG, MCP Runtime.
+
+Security and Zero Trust plus Observability are mandatory cross-cutting controls across all Fabric services.
+
 ## Objective
 
 Build a production-grade, plug-and-play, infrastructure-agnostic enterprise AI platform on Kubernetes that can be deployed across EKS, GKE, AKS, and bare metal, while remaining secure, replaceable, and operations-ready.

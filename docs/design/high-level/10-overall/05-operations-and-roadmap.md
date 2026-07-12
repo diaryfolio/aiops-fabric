@@ -1,5 +1,9 @@
 # Design 10.5 - Operations Baseline and Roadmap
 
+## Concept Alignment
+
+Operations and roadmap planning assume the canonical flow `Enterprise User or App -> API Gateway and Auth -> Fabric Layer`, with Security and Zero Trust plus Observability applied across all Fabric services.
+
 ## Day-2 Operations Baseline
 
 - Security:

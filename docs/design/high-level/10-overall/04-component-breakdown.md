@@ -1,5 +1,11 @@
 # Design 10.4 - Component Breakdown
 
+## Concept Alignment
+
+Canonical flow: `Enterprise User or App -> API Gateway and Auth -> Fabric Layer`.
+
+The layers below define Fabric internals. Security and Zero Trust plus Observability are cross-cutting requirements for every layer.
+
 ## Layer A - LLM Hosting and Inference
 
 - Primary serving runtime: vLLM.

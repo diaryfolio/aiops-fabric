@@ -4,6 +4,12 @@
 
 This document defines the reference deployment topologies for EKS, GKE, AKS, and bare-metal Kubernetes while preserving a single logical platform model.
 
+## 1.1 Concept Alignment
+
+Deployment topology follows the canonical flow `Enterprise User or App -> API Gateway and Auth -> Fabric Layer`.
+
+Fabric Layer services include AI Orchestrator, Workflow Engine, LLM Gateway and Inference, Memory and RAG, and MCP Runtime. Security and Zero Trust plus Observability are required as cross-cutting controls in all deployment models.
+
 ## 2. Environment Model
 
 - Management plane:
