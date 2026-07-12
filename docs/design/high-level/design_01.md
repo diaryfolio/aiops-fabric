@@ -1,8 +1,8 @@
-# LatticeCore Platform on Kubernetes - Technical System Design 01
+# LatticeCore® Platform on Kubernetes - Technical System Design 01
 
 ## 1. Objective and Scope
 
-This document defines a production-grade, plug-and-play, infrastructure-agnostic enterprise AI platform, branded as LatticeCore Platform, fully hosted on Kubernetes. The platform centralizes model hosting, memory/context management, MCP server runtime, workflow orchestration, and cloud-native governance into a single control and data plane architecture deployable to EKS, GKE, AKS, and bare metal clusters.
+This document defines a production-grade, plug-and-play, infrastructure-agnostic enterprise AI platform, branded as LatticeCore® Platform, fully hosted on Kubernetes. The platform centralizes model hosting, memory/context management, MCP server runtime, workflow orchestration, and cloud-native governance into a single control and data plane architecture deployable to EKS, GKE, AKS, and bare metal clusters.
 
 ### Primary Non-Functional Targets
 

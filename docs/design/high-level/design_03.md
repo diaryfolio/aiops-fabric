@@ -1,4 +1,4 @@
-# LatticeCore Platform on Kubernetes - Technical System Design 03
+# LatticeCore® Platform on Kubernetes - Technical System Design 03
 
 ## 1. Security and Governance Architecture
 

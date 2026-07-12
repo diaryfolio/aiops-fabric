@@ -1,4 +1,4 @@
-# LatticeCore Platform on Kubernetes - Technical System Design 04
+# LatticeCore® Platform on Kubernetes - Technical System Design 04
 
 ## 1. Day-2 Operations and SRE Model
 
