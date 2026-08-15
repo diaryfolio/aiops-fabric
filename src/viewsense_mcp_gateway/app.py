@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from viewsense_common.auth import TokenVerifier
 from viewsense_common.client import ServiceClient
+from viewsense_common.database import create_pool_with_retry
 from viewsense_common.settings import csv
 from viewsense_common.tenant import delegated_tenant
 
@@ -21,7 +22,7 @@ pool: asyncpg.Pool | None = None
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     global pool
-    pool = await asyncpg.create_pool(dsn=os.environ["VS_DATABASE_URL"], min_size=1, max_size=5)
+    pool = await create_pool_with_retry(os.environ["VS_DATABASE_URL"])
     async with pool.acquire() as connection:
         await connection.execute(
             """

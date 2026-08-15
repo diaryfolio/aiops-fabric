@@ -1,66 +1,80 @@
-# ViewSense
+# ViewSense: Enterprise AI Without Losing Control
 
-ViewSense is a portable, enterprise-controlled AI backbone. It gives applications one governed API while allowing LLM runtimes, memory products, vector stores, workflow engines, and MCP servers to run locally or in approved clouds and to be replaced independently.
+ViewSense is the control backbone for an organisation's AI. It lets teams use private models, cloud AI, company knowledge, automated agents, and business tools through one governed platform without making the organisation permanently dependent on one vendor.
 
-For a non-technical explanation of the business value, start with [BUSINESS_README.md](BUSINESS_README.md).
+It can run in an enterprise data centre, a private cloud, a public cloud, or across several locations. The organisation decides where data may travel, which AI providers may be used, what an agent is allowed to do, and when a person must approve an action.
 
-This repository contains the architecture and an executable Kubernetes reference slice. The reference proves the main boundaries without requiring a GPU or external AI account:
+## The business problem
 
-- edge API and request orchestrator;
-- OpenAI-compatible LLM gateway with a deterministic mock provider;
-- vendor-neutral memory gateway with a PostgreSQL/pgvector provider;
-- MCP registry and invocation gateway with a test provider;
-- short-lived, audience-bound workload tokens plus mutual TLS on every API hop;
-- deny-by-default Kubernetes network policies and separate data stores.
-- cryptographically bound Trust Envelope delegation plus provider passport, evaluation-admission, and safe evidence APIs.
+Enterprises increasingly have separate AI assistants, model providers, vector databases, automation products, and tool integrations. Each product brings its own identity, security, audit, data-retention, and operational model. This creates duplicated cost, inconsistent controls, vendor lock-in, and uncertainty about what happened when AI makes a decision or takes an action.
 
-The mock LLM and deterministic embedding are test adapters, not production AI models. Replace them with vLLM, OpenAI, Azure OpenAI, Mem0, or another contract-conforming provider without changing callers.
+ViewSense provides a stable layer above those products. Applications connect to ViewSense rather than directly to a model, memory database, or automation engine. Products can then be replaced through policy and configuration instead of rewriting every application.
 
-## Architecture
+## Business benefits
 
-```mermaid
-flowchart LR
-    C["Enterprise client"] -->|"mTLS + tenant token"| G["Edge API"]
-    G -->|"aud: orchestrator"| O["Orchestrator"]
-    O -->|"memory API"| MG["Memory gateway"]
-    O -->|"OpenAI-compatible API"| LG["LLM gateway"]
-    O -->|"MCP invocation API"| XG["MCP gateway"]
-    MG --> MP["Memory provider adapter"]
-    LG --> LP["Local or cloud LLM adapter"]
-    XG --> XP["Isolated MCP server"]
-    MP --> PGV[("PostgreSQL + pgvector")]
-    XG --> PGR[("Registry PostgreSQL")]
-    I["Enterprise IdP / workload issuer"] -.-> G & O & MG & LG & XG & MP & LP & XP
-```
+### Preserve choice
 
-Every arrow is a versioned API contract. No service reads another service's database. Provider-specific behavior remains behind adapters.
+Start with a local model and PostgreSQL, use an approved cloud model for selected workloads, or replace either later. ViewSense keeps the application-facing contract stable.
 
-## Run locally with Kubernetes
+### Keep sensitive data under control
 
-Prerequisites: Docker, `kubectl`, `k3d`, and a current Kubernetes context that points to the intended development cluster.
+Requests carry verified identity, tenant, business purpose, classification, residency, and approval context. Policy determines which providers and locations are eligible before cost or speed is considered.
 
-```bash
-make unit
-make lint
-make k8s-deploy
-make k8s-test
-```
+### Make AI actions explainable
 
-The deployment script builds `viewsense-core:dev`, imports it into k3d, creates short-lived development credentials, and applies resources only to `viewsense-dev`. Generated keys and credentials live under `.viewsense/` and are ignored by Git.
+ViewSense records why a provider was selected, what approved knowledge was retrieved, which tools an agent requested, which policies applied, and who approved consequential actions. This creates an enterprise AI flight recorder without logging sensitive content by default.
 
-Docker Compose is retained as a quick developer harness:
+### Reduce vendor lock-in
 
-```bash
-make compose-up
-make compose-test
-```
+Models, memory products, workflow engines, and MCP tools are certified providers behind ViewSense APIs. Moving between them becomes a controlled provider change rather than a large application migration.
 
-## Important production boundary
+### Govern agents safely
 
-The in-repository identity issuer, static development CA, mock LLM, mock MCP server, and deterministic embeddings exist to make contracts testable. Production installations must integrate enterprise OIDC, automated workload identity/certificate issuance (for example SPIFFE/SPIRE or a service mesh), an external secrets manager, a real embedding service, and production-grade model/MCP providers.
+AI may propose a plan, but deterministic policy controls execution. Budgets, time limits, tool permissions, human approvals, cancellation, and evidence records prevent an agent from silently expanding its own authority.
 
-Start with [the architecture index](docs/design/high-level/design_01.md) and [the deployment design](docs/design/high-level/20-deployment/01-deployment-topology-sizing.md).
+### Support regulated and disconnected environments
 
-Copy-paste validation commands, including direct memory API write/search and negative authorization checks, are in [tests/README.md](tests/README.md).
+ViewSense is designed for Kubernetes, private installation, isolated business or regulatory cells, and future air-gapped operation. Each cell can keep data local while sharing approved policy and provider metadata.
 
-All contributors and coding agents must follow the design-sync rules in [CLAUDE.md](CLAUDE.md).
+### Improve operational visibility and cost control
+
+Structured telemetry attributes model, memory, workflow, and tool usage to the correct tenant and provider. Enterprises can build service levels, showback, budgets, alerts, and stop-loss controls without embedding one observability vendor into every service.
+
+## How it works in plain language
+
+1. A person or application sends an AI request to ViewSense.
+2. ViewSense verifies who is asking, for which organisation, and for what purpose.
+3. Policy identifies providers allowed for that data, location, risk, and capability.
+4. Approved company memory is retrieved without giving the model direct database access.
+5. The selected AI model produces a response or proposes an action.
+6. Tool actions pass through a governed gateway and may require human approval.
+7. ViewSense records safe evidence explaining the execution, without recording confidential payloads by default.
+
+## What makes ViewSense different
+
+- **Trust Envelope:** signed authority and business context follows every internal request.
+- **Provider Passport:** models, memory systems, tools, and workflow engines declare capabilities, residency, security evidence, evaluations, and expiry.
+- **Evaluation Admission:** a provider or agent configuration cannot be promoted merely because it responds; it must pass the organisation's evidence gates.
+- **Agent Flight Recorder:** durable, replay-safe evidence explains plans, approvals, tools, policy decisions, and outcomes.
+- **Governed Memory Fabric:** source, chunks, embeddings, retrieval, and answers retain lineage so knowledge can be rebuilt, deleted, or audited.
+- **Sovereign AI Cells:** workloads can remain inside approved regions or isolated environments while retaining consistent control.
+
+## What ViewSense does not try to be
+
+ViewSense is not another foundation model, vector database, low-code workflow editor, or SIEM. It integrates and governs those products. This focus is what lets an enterprise keep control while technology and suppliers change.
+
+## Current maturity
+
+The repository contains an executable reference covering secure APIs, model routing, memory, MCP governance, ingestion, Kubernetes deployment, structured logs, and end-to-end tests. The Trust Envelope and governance foundation provide signed tenant delegation, provider passports, evaluation admission, and append-only evidence metadata.
+
+Enterprise identity federation, production workload identity, real model providers, durable agent/workflow execution, full telemetry, high availability, disaster recovery, confidential computing, and multi-cluster sovereign cells remain staged production capabilities. The technical documentation labels reference, partial, and contract-only components explicitly.
+
+## Intended users
+
+- Executives seeking AI adoption without uncontrolled lock-in or data movement.
+- Security and risk teams requiring enforceable policy and audit evidence.
+- Platform teams operating local and cloud AI consistently.
+- Application teams wanting stable APIs rather than provider-specific integrations.
+- Data owners requiring lineage, retention, residency, and deletion controls.
+
+For architecture, installation, and engineering details, see the [technical guide](TECHNICAL_README.md). For copy-paste validation, see the [test guide](tests/README.md).

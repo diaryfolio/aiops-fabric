@@ -40,7 +40,7 @@ services:
       - ./.viewsense/identity-signing.key:/run/viewsense/identity/signing.key:ro
       - ./.viewsense/clients.json:/run/viewsense/identity/clients.json:ro
     ports:
-      - "127.0.0.1:9444:8443"
+      - "127.0.0.1:${VS_IDENTITY_HOST_PORT:-9444}:8443"
     networks: [edge, control]
 
   gateway:
@@ -55,7 +55,7 @@ services:
       - ./.viewsense/pki/gateway:/run/viewsense/tls:ro
       - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
     ports:
-      - "127.0.0.1:9443:8443"
+      - "127.0.0.1:${VS_GATEWAY_HOST_PORT:-9443}:8443"
     networks: [edge, control]
 
   orchestrator:

@@ -79,10 +79,9 @@ kubectl -n "${namespace}" rollout status statefulset/registry-db --timeout=180s
 kubectl -n "${namespace}" rollout status statefulset/governance-db --timeout=180s
 for deployment in identity gateway orchestrator ingestion llm-gateway mock-llm memory-gateway memory-postgres mcp-gateway mock-mcp governance; do
   # TLS keys, signing material, workload credentials, and the mutable development
-  # image are loaded at process start. Force each owned workload to consume them.
+  # image are loaded at process start. Restart and wait sequentially so the small
+  # development cluster never surges every service at the same time.
   kubectl -n "${namespace}" rollout restart "deployment/${deployment}"
-done
-for deployment in identity gateway orchestrator ingestion llm-gateway mock-llm memory-gateway memory-postgres mcp-gateway mock-mcp governance; do
   kubectl -n "${namespace}" rollout status "deployment/${deployment}" --timeout=180s
 done
 kubectl -n "${namespace}" get pods -o wide
