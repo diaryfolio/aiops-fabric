@@ -1,0 +1,200 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny-all}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: identity-ingress}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: identity}}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: viewsense}}
+      ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: gateway-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: gateway}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: viewsense}}
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/name: identity}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: orchestrator}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: ingestion}}
+      ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: orchestrator-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: orchestrator}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app.kubernetes.io/name: gateway}}}]
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/name: identity}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: llm-gateway}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: memory-gateway}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: mcp-gateway}}
+      ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: llm-gateway-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: llm-gateway}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app.kubernetes.io/name: orchestrator}}}]
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/name: identity}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: mock-llm}}
+      ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: mock-llm-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: mock-llm}}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app.kubernetes.io/name: llm-gateway}}}]
+      ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: memory-gateway-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: memory-gateway}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector: {matchLabels: {app.kubernetes.io/name: orchestrator}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: ingestion}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: smoke}}
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/name: identity}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: memory-postgres}}
+      ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: ingestion-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: ingestion}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app.kubernetes.io/name: smoke}}}]
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/name: identity}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: memory-gateway}}
+      ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: memory-provider-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: memory-postgres}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app.kubernetes.io/name: memory-gateway}}}]
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    - to: [{podSelector: {matchLabels: {app.kubernetes.io/name: memory-db}}}]
+      ports: [{protocol: TCP, port: 5432}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: memory-db-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: memory-db}}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app.kubernetes.io/name: memory-postgres}}}]
+      ports: [{protocol: TCP, port: 5432}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: mcp-gateway-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: mcp-gateway}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector: {matchLabels: {app.kubernetes.io/name: orchestrator}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: smoke}}
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/name: identity}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: mock-mcp}}
+      ports: [{protocol: TCP, port: 8443}]
+    - to: [{podSelector: {matchLabels: {app.kubernetes.io/name: registry-db}}}]
+      ports: [{protocol: TCP, port: 5432}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: mock-mcp-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: mock-mcp}}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app.kubernetes.io/name: mcp-gateway}}}]
+      ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: registry-db-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: registry-db}}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app.kubernetes.io/name: mcp-gateway}}}]
+      ports: [{protocol: TCP, port: 5432}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: smoke-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: smoke}}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/name: identity}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: gateway}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: ingestion}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: memory-gateway}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: mcp-gateway}}
+      ports: [{protocol: TCP, port: 8443}]

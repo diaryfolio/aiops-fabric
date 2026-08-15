@@ -1,0 +1,38 @@
+# ViewSense Day-2 Operations and SRE
+
+## Observability contract
+
+Every hop emits W3C trace context and structured telemetry with service, environment, request/trace IDs, tenant pseudonym, route/provider ID, operation, outcome, duration, and retry count. AI metrics include time to first token, tokens/sec, input/output tokens, context size, retrieval latency/hit count, tool calls/timeouts, and policy decisions. Prompt, completion, memory, and tool bodies are excluded unless a classified diagnostic policy explicitly enables them.
+
+## SLOs and dependency budgets
+
+Define SLOs separately for edge/control overhead, memory, each model route, and each MCP class. End-to-end alerts use multi-window error-budget burn. A provider outage must identify the dependency instead of presenting as generic orchestrator failure. Route changes and degraded no-memory operation are visible events.
+
+## Release safety
+
+- immutable signed image digests and GitOps promotion;
+- contract tests against every configured adapter;
+- expand/migrate/contract database changes with rollback compatibility;
+- canary by non-sensitive synthetic tenant, then explicit pilot tenants;
+- rollback on security regression, error-budget burn, latency, or output-quality gate;
+- configuration rollout and application rollout independently reversible.
+
+## Backup and disaster recovery
+
+Each state owner defines RPO/RTO, encryption, retention, legal hold, restore order, and integrity verification. PostgreSQL uses PITR plus regular full backups. Vector records retain enough canonical source/embedding metadata to reindex. MCP catalog backups exclude retrievable secrets. Restore tests run monthly in an isolated environment; regional/cluster failover is exercised quarterly for required tiers.
+
+## Incident playbooks
+
+- suspected cross-tenant retrieval: stop affected route, preserve audit evidence, revoke identities, assess all provider copies;
+- compromised MCP connector: disable catalog entry, block egress, revoke connector credentials, inspect invocation history;
+- provider credential leak: revoke at provider, rotate secret source, invalidate pods/tokens, check usage audit;
+- token runaway: cancel request/workflow, enforce tenant stop-loss, quarantine route;
+- model quality/safety regression: pin previous provider/model policy, preserve evaluation evidence, notify owners.
+
+## Capacity and cost
+
+Review GPU saturation, batching, KV-cache pressure, database index health, queue depth, connector external quotas, and tenant cost weekly. Enforce per-tenant concurrency, token, memory-storage, and tool budgets. Cost-based routing is evaluated only after capability, security, residency, and SLO constraints.
+
+## Operational readiness gate
+
+No production provider is enabled until it has ownership/on-call, dashboard and alerts, SLO, capacity test, failure-mode test, security review, data-flow record, backup/restore where stateful, credential rotation, and rollback/disable instructions.

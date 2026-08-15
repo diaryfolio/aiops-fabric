@@ -1,0 +1,16 @@
+{
+  "apiVersion": "fabric.viewsense.io/v1alpha1",
+  "kind": "Module",
+  "metadata": {"name": "identity", "title": "Identity and workload authentication"},
+  "spec": {
+    "maturity": "implemented-reference",
+    "implementationPaths": ["src/viewsense_identity/app.py", "src/viewsense_common/auth.py"],
+    "contractPaths": ["docs/design/high-level/30-security/01-zero-trust.md"],
+    "helmPaths": ["products.identity", "modules.identity"],
+    "dataOwnership": ["development client grants", "development signing keys"],
+    "providers": [
+      {"name": "development", "status": "bundled"},
+      {"name": "external-oidc", "status": "external"}
+    ]
+  }
+}

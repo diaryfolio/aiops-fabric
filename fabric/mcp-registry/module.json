@@ -1,0 +1,16 @@
+{
+  "apiVersion": "fabric.viewsense.io/v1alpha1",
+  "kind": "Module",
+  "metadata": {"name": "mcp-registry", "title": "MCP registry and invocation gateway"},
+  "spec": {
+    "maturity": "implemented-reference",
+    "implementationPaths": ["src/viewsense_mcp_gateway/app.py", "src/viewsense_mock_mcp/app.py"],
+    "contractPaths": ["docs/design/high-level/30-security/01-zero-trust.md"],
+    "helmPaths": ["products.mcp", "modules.mcp-gateway", "modules.mock-mcp", "datastores.registry"],
+    "dataOwnership": ["MCP server catalog", "provider metadata"],
+    "providers": [
+      {"name": "mock-mcp", "status": "bundled"},
+      {"name": "certified-external-mcp", "status": "external"}
+    ]
+  }
+}

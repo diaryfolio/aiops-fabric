@@ -1,0 +1,8 @@
+.git
+.viewsense
+.env.viewsense
+__pycache__
+.pytest_cache
+.ruff_cache
+*.pyc
+

@@ -1,0 +1,150 @@
+global:
+  environment: development
+  image:
+    repository: viewsense-core
+    tag: dev
+    pullPolicy: Never
+  identityUrl: https://identity:8443
+  identityIssuer: https://identity:8443
+  identityPublicSecret: identity-public
+  workloadCredentialsSecret: workload-credentials
+  podSecurity:
+    runAsUser: 10001
+
+products:
+  identity:
+    product: development
+  llm:
+    product: mock-openai-compatible
+    endpoint: https://mock-llm:8443
+    audience: mock-llm
+    # Required for non-bundled endpoints when NetworkPolicy is enabled.
+    # Standard NetworkPolicy accepts CIDRs, not DNS names.
+    externalEgress: []
+    # - cidr: 203.0.113.10/32
+    #   port: 443
+  memory:
+    product: postgres-pgvector
+    endpoint: https://memory-postgres:8443
+    audience: memory-postgres
+    externalEgress: []
+  ingestion:
+    product: builtin-deterministic
+  agentRuntime:
+    enabled: false
+    product: contract-only
+  workflow:
+    enabled: false
+    product: none
+  mcp:
+    mockProviderEnabled: true
+    allowedHosts: mock-mcp
+
+modules:
+  identity:
+    enabled: true
+    appModule: viewsense_identity.app
+    plane: security
+    tlsSecret: tls-identity
+    ingressFrom: [gateway, orchestrator, ingestion, llm-gateway, memory-gateway, mcp-gateway, smoke]
+    egressTo: []
+    resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
+  gateway:
+    enabled: true
+    appModule: viewsense_gateway.app
+    plane: edge
+    tlsSecret: tls-gateway
+    clientId: gateway
+    clientSecretKey: gateway
+    ingressFrom: [smoke]
+    egressTo: [identity, orchestrator]
+    resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
+  orchestrator:
+    enabled: true
+    appModule: viewsense_orchestrator.app
+    plane: control
+    tlsSecret: tls-orchestrator
+    clientId: orchestrator
+    clientSecretKey: orchestrator
+    ingressFrom: [gateway]
+    egressTo: [identity, memory-gateway, llm-gateway, mcp-gateway]
+    resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
+  ingestion:
+    enabled: true
+    appModule: viewsense_ingestion.app
+    plane: ingestion
+    tlsSecret: tls-ingestion
+    clientId: ingestion
+    clientSecretKey: ingestion
+    ingressFrom: [smoke]
+    egressTo: [identity, memory-gateway]
+    resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
+  llm-gateway:
+    enabled: true
+    appModule: viewsense_llm_gateway.app
+    plane: llm-control
+    tlsSecret: tls-llm-gateway
+    clientId: llm-gateway
+    clientSecretKey: llm-gateway
+    ingressFrom: [orchestrator]
+    egressTo: [identity, mock-llm]
+    resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
+  mock-llm:
+    enabled: true
+    appModule: viewsense_mock_llm.app
+    plane: llm-provider
+    tlsSecret: tls-mock-llm
+    ingressFrom: [llm-gateway]
+    egressTo: []
+    resources: {requests: {cpu: 25m, memory: 64Mi}, limits: {cpu: 250m, memory: 192Mi}}
+  memory-gateway:
+    enabled: true
+    appModule: viewsense_memory_gateway.app
+    plane: memory-control
+    tlsSecret: tls-memory-gateway
+    clientId: memory-gateway
+    clientSecretKey: memory-gateway
+    ingressFrom: [orchestrator, smoke]
+    egressTo: [identity, memory-postgres]
+    resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
+  memory-postgres:
+    enabled: true
+    appModule: viewsense_memory_postgres.app
+    plane: memory-provider
+    tlsSecret: tls-memory-postgres
+    ingressFrom: [memory-gateway]
+    egressTo: [memory-db]
+    resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
+  mcp-gateway:
+    enabled: true
+    appModule: viewsense_mcp_gateway.app
+    plane: mcp-control
+    tlsSecret: tls-mcp-gateway
+    clientId: mcp-gateway
+    clientSecretKey: mcp-gateway
+    ingressFrom: [orchestrator, smoke]
+    egressTo: [identity, mock-mcp, registry-db]
+    resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
+  mock-mcp:
+    enabled: true
+    appModule: viewsense_mock_mcp.app
+    plane: mcp-provider
+    tlsSecret: tls-mock-mcp
+    ingressFrom: [mcp-gateway]
+    egressTo: []
+    resources: {requests: {cpu: 25m, memory: 64Mi}, limits: {cpu: 250m, memory: 192Mi}}
+
+datastores:
+  memory:
+    image: pgvector/pgvector:pg16-bookworm
+    credentialsSecret: memory-db-credentials
+    storage: 2Gi
+  registry:
+    image: postgres:16-bookworm
+    credentialsSecret: registry-db-credentials
+    storage: 1Gi
+
+networkPolicy:
+  enabled: true
+  dnsNamespace: kube-system
+  dnsPodLabels: {k8s-app: kube-dns}

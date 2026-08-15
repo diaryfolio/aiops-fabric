@@ -1,0 +1,18 @@
+{
+  "apiVersion": "fabric.viewsense.io/v1alpha1",
+  "kind": "Module",
+  "metadata": {"name": "workflows", "title": "Durable workflow provider boundary"},
+  "spec": {
+    "maturity": "contract-only",
+    "implementationPaths": [],
+    "contractPaths": ["docs/design/high-level/70-agentic/01-agent-runtime-ingestion-workflows.md"],
+    "helmPaths": ["products.workflow"],
+    "dataOwnership": ["planned workflow correlation metadata"],
+    "providers": [
+      {"name": "n8n", "status": "planned"},
+      {"name": "temporal", "status": "planned"},
+      {"name": "argo-workflows", "status": "planned"},
+      {"name": "external", "status": "planned"}
+    ]
+  }
+}

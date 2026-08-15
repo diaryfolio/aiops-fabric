@@ -1,0 +1,118 @@
+{{- range $name, $module := .Values.modules }}
+{{- if eq (include "viewsense.moduleEnabled" (list $name $module $)) "true" }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "viewsense.labels" $ | nindent 4 }}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "viewsense.labels" $ | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+  ports:
+    - {name: https, port: 8443, targetPort: https}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "viewsense.labels" $ | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ $name }}
+        app.kubernetes.io/instance: {{ $.Release.Name }}
+        app.kubernetes.io/part-of: viewsense
+        viewsense.io/plane: {{ $module.plane }}
+    spec:
+      serviceAccountName: {{ $name }}
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: {{ $name }}
+          image: "{{ $.Values.global.image.repository }}:{{ $.Values.global.image.tag }}"
+          imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+          ports: [{name: https, containerPort: 8443}]
+          env:
+            - {name: VS_APP_MODULE, value: {{ $module.appModule | quote }}}
+            - {name: VS_SERVICE_NAME, value: {{ $name | quote }}}
+            - {name: VS_ENVIRONMENT, value: {{ $.Values.global.environment | quote }}}
+            - {name: VS_PORT, value: "8443"}
+            - {name: VS_IDENTITY_URL, value: {{ $.Values.global.identityUrl | quote }}}
+            - {name: VS_IDENTITY_ISSUER, value: {{ $.Values.global.identityIssuer | quote }}}
+            - {name: VS_TLS_CA_FILE, value: /run/viewsense/tls/ca.crt}
+            - {name: VS_TLS_CERT_FILE, value: /run/viewsense/tls/tls.crt}
+            - {name: VS_TLS_KEY_FILE, value: /run/viewsense/tls/tls.key}
+            {{- if ne $name "identity" }}
+            - {name: VS_IDENTITY_PUBLIC_KEY_FILE, value: /run/viewsense/identity/signing.pub}
+            {{- end }}
+            {{- if $module.clientId }}
+            - {name: VS_CLIENT_ID, value: {{ $module.clientId | quote }}}
+            - name: VS_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: {{ $.Values.global.workloadCredentialsSecret }}, key: {{ $module.clientSecretKey }}}}
+            {{- end }}
+            {{- if eq $name "identity" }}
+            - {name: VS_IDENTITY_PRIVATE_KEY_FILE, value: /run/viewsense/identity/signing.key}
+            - {name: VS_IDENTITY_CLIENTS_FILE, value: /run/viewsense/identity/clients.json}
+            {{- else if eq $name "gateway" }}
+            - {name: VS_ORCHESTRATOR_URL, value: "https://orchestrator:8443"}
+            {{- else if eq $name "orchestrator" }}
+            - {name: VS_MEMORY_URL, value: "https://memory-gateway:8443"}
+            - {name: VS_LLM_URL, value: "https://llm-gateway:8443"}
+            {{- else if eq $name "ingestion" }}
+            - {name: VS_MEMORY_URL, value: "https://memory-gateway:8443"}
+            {{- else if eq $name "llm-gateway" }}
+            - {name: VS_LLM_PROVIDER_URL, value: {{ $.Values.products.llm.endpoint | quote }}}
+            - {name: VS_LLM_PROVIDER_AUDIENCE, value: {{ $.Values.products.llm.audience | quote }}}
+            {{- else if eq $name "memory-gateway" }}
+            - {name: VS_MEMORY_PROVIDER_URL, value: {{ $.Values.products.memory.endpoint | quote }}}
+            - {name: VS_MEMORY_PROVIDER_AUDIENCE, value: {{ $.Values.products.memory.audience | quote }}}
+            {{- else if eq $name "memory-postgres" }}
+            - {name: VS_DATABASE_URL, valueFrom: {secretKeyRef: {name: {{ $.Values.datastores.memory.credentialsSecret }}, key: url}}}
+            {{- else if eq $name "mcp-gateway" }}
+            - {name: VS_DATABASE_URL, valueFrom: {secretKeyRef: {name: {{ $.Values.datastores.registry.credentialsSecret }}, key: url}}}
+            - {name: VS_MCP_ALLOWED_HOSTS, value: {{ $.Values.products.mcp.allowedHosts | quote }}}
+            {{- end }}
+          volumeMounts:
+            - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
+            {{- if eq $name "identity" }}
+            - {name: identity-material, mountPath: /run/viewsense/identity, readOnly: true}
+            {{- else }}
+            - {name: identity-public, mountPath: /run/viewsense/identity, readOnly: true}
+            {{- end }}
+          readinessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 2, periodSeconds: 3}
+          livenessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 10, periodSeconds: 10}
+          resources:
+            {{- toYaml $module.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: {{ $.Values.global.podSecurity.runAsUser }}
+      volumes:
+        - {name: tls, secret: {secretName: {{ $module.tlsSecret }}, defaultMode: 0444}}
+        {{- if eq $name "identity" }}
+        - {name: identity-material, secret: {secretName: identity-material, defaultMode: 0444}}
+        {{- else }}
+        - {name: identity-public, secret: {secretName: {{ $.Values.global.identityPublicSecret }}, defaultMode: 0444}}
+        {{- end }}
+{{- end }}
+{{- end }}

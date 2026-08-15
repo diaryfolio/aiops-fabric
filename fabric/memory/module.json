@@ -1,0 +1,16 @@
+{
+  "apiVersion": "fabric.viewsense.io/v1alpha1",
+  "kind": "Module",
+  "metadata": {"name": "memory", "title": "Memory gateway and vector providers"},
+  "spec": {
+    "maturity": "implemented-reference",
+    "implementationPaths": ["src/viewsense_memory_gateway/app.py", "src/viewsense_memory_postgres/app.py"],
+    "contractPaths": ["docs/design/high-level/10-overall/03-api-integration-standards.md"],
+    "helmPaths": ["products.memory", "modules.memory-gateway", "modules.memory-postgres", "datastores.memory"],
+    "dataOwnership": ["tenant memories", "vector embeddings", "memory metadata"],
+    "providers": [
+      {"name": "postgres-pgvector", "status": "bundled"},
+      {"name": "mem0-compatible-external", "status": "external"}
+    ]
+  }
+}
