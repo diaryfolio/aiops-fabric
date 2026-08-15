@@ -39,6 +39,47 @@ spec:
     - metadata: {name: data}
       spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: {{ .Values.datastores.memory.storage }}}}}
 {{- end }}
+{{- if (index .Values.modules "governance").enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: governance-db, labels: {app.kubernetes.io/part-of: viewsense}}
+spec:
+  selector: {app.kubernetes.io/name: governance-db, app.kubernetes.io/instance: {{ .Release.Name }}}
+  ports: [{name: postgres, port: 5432, targetPort: postgres}]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: governance-db}
+spec:
+  serviceName: governance-db
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: governance-db, app.kubernetes.io/instance: {{ .Release.Name }}}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: governance-db, app.kubernetes.io/instance: {{ .Release.Name }}, app.kubernetes.io/part-of: viewsense, viewsense.io/plane: governance-data}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {fsGroup: 999, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: postgres
+          image: {{ .Values.datastores.governance.image }}
+          imagePullPolicy: IfNotPresent
+          ports: [{name: postgres, containerPort: 5432}]
+          env:
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+            - {name: POSTGRES_DB, value: viewsense_governance}
+            - {name: POSTGRES_USER, value: viewsense_governance}
+            - {name: POSTGRES_PASSWORD, valueFrom: {secretKeyRef: {name: {{ .Values.datastores.governance.credentialsSecret }}, key: password}}}
+          readinessProbe: {exec: {command: [pg_isready, -U, viewsense_governance, -d, viewsense_governance]}, initialDelaySeconds: 3, periodSeconds: 3}
+          livenessProbe: {exec: {command: [pg_isready, -U, viewsense_governance, -d, viewsense_governance]}, initialDelaySeconds: 15, periodSeconds: 10}
+          resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {cpu: "1", memory: 1Gi}}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}, runAsNonRoot: true, runAsUser: 999}
+          volumeMounts: [{name: data, mountPath: /var/lib/postgresql/data}]
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: {{ .Values.datastores.governance.storage }}}}}
+{{- end }}
 {{- if (index .Values.modules "mcp-gateway").enabled }}
 ---
 apiVersion: v1

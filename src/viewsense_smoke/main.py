@@ -4,6 +4,7 @@ import asyncio
 import os
 import sys
 import uuid
+from datetime import UTC, datetime, timedelta
 
 import httpx
 
@@ -29,7 +30,8 @@ async def main() -> None:
     ingestion = os.getenv("VS_INGESTION_URL", "https://ingestion:8443")
     memory = os.getenv("VS_MEMORY_URL", "https://memory-gateway:8443")
     mcp = os.getenv("VS_MCP_URL", "https://mcp-gateway:8443")
-    for url in (gateway, ingestion, memory, mcp):
+    governance = os.getenv("VS_GOVERNANCE_URL", "https://governance:8443")
+    for url in (gateway, ingestion, memory, mcp, governance):
         await wait_for(client, f"{url}/healthz")
     user_id = f"smoke-{uuid.uuid4().hex}"
 
@@ -38,6 +40,18 @@ async def main() -> None:
             f"{gateway}/v1/responses", json={"input": "blocked", "user_id": user_id}
         )
     assert unauthorized.status_code == 401, unauthorized.text
+
+    memory_read_token = await client.token("memory-gateway", "memory.read")
+    async with client.http() as http:
+        unsigned_tenant = await http.post(
+            f"{memory}/v1/memories/search",
+            headers={
+                "Authorization": f"Bearer {memory_read_token}",
+                "X-ViewSense-Tenant": "tenant-b",
+            },
+            json={"owner_id": user_id, "query": "blocked", "limit": 1},
+        )
+    assert unsigned_tenant.status_code == 400, unsigned_tenant.text
 
     gateway_token = await client.token("gateway", "api.invoke")
     async with client.http(timeout=60) as http:
@@ -62,7 +76,6 @@ async def main() -> None:
             f"{ingestion}/v1/documents:ingest",
             headers={
                 "Authorization": f"Bearer {ingestion_token}",
-                "X-ViewSense-Tenant": "tenant-a",
             },
             json={
                 "source_id": "smoke://agentic-ingestion",
@@ -94,12 +107,82 @@ async def main() -> None:
             f"{mcp}/v1/tools/call",
             headers={
                 "Authorization": f"Bearer {mcp_invoke}",
-                "X-ViewSense-Tenant": "tenant-a",
             },
             json={"server": "mock", "tool": "echo", "arguments": {"text": "zero-trust-ok"}},
         )
         called.raise_for_status()
     assert called.json()["content"][0]["text"] == "zero-trust-ok", called.text
+
+    governance_admin = await client.token("governance", "governance.admin")
+    passport_name = f"smoke-llm-{uuid.uuid4().hex[:8]}"
+    async with client.http() as http:
+        passport = await http.put(
+            f"{governance}/v1/provider-passports/{passport_name}",
+            headers={"Authorization": f"Bearer {governance_admin}"},
+            json={
+                "name": passport_name,
+                "kind": "llm",
+                "endpoint": "https://mock-llm:8443",
+                "protocols": {"openai-chat": "v1"},
+                "capabilities": {"chat": True, "streaming": False},
+                "residencies": ["local-dev"],
+                "data_classifications": ["internal"],
+                "owner": "viewsense-smoke",
+                "status": "draft",
+                "expires_at": (datetime.now(UTC) + timedelta(hours=1)).isoformat(),
+            },
+        )
+        passport.raise_for_status()
+        evaluation = await http.post(
+            f"{governance}/v1/provider-passports/{passport_name}/evaluations",
+            headers={"Authorization": f"Bearer {governance_admin}"},
+            json={
+                "suite": "smoke-quality",
+                "passed": True,
+                "scores": {"success_rate": 1.0},
+                "policy_version": "smoke-v1",
+            },
+        )
+        evaluation.raise_for_status()
+        admission = await http.post(
+            f"{governance}/v1/provider-passports/{passport_name}:admit",
+            headers={"Authorization": f"Bearer {governance_admin}"},
+            json={
+                "required_capabilities": ["chat"],
+                "allowed_residencies": ["local-dev"],
+                "data_classification": "internal",
+                "required_evaluation_suites": ["smoke-quality"],
+                "policy_version": "smoke-v1",
+            },
+        )
+        admission.raise_for_status()
+    assert admission.json()["admitted"] is True, admission.text
+
+    evidence_token = await client.token("governance", "evidence.write")
+    run_id = f"run_{uuid.uuid4().hex}"
+    async with client.http() as http:
+        evidence = await http.post(
+            f"{governance}/v1/evidence-events",
+            headers={"Authorization": f"Bearer {evidence_token}"},
+            json={
+                "run_id": run_id,
+                "event_type": "provider.admitted",
+                "outcome": "success",
+                "policy_version": "smoke-v1",
+                "artifact_refs": [f"provider-passport:{passport_name}"],
+                "metadata": {"provider_kind": "llm"},
+            },
+        )
+        evidence.raise_for_status()
+    governance_read = await client.token("governance", "governance.read")
+    async with client.http() as http:
+        evidence_list = await http.get(
+            f"{governance}/v1/evidence-events",
+            params={"run_id": run_id},
+            headers={"Authorization": f"Bearer {governance_read}"},
+        )
+        evidence_list.raise_for_status()
+    assert len(evidence_list.json()["items"]) == 1, evidence_list.text
     print("ViewSense end-to-end smoke tests passed")
 
 

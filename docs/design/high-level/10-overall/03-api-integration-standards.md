@@ -8,6 +8,8 @@
 | model inference | OpenAI-compatible `/v1/chat/completions` initially | adapter declares supported features |
 | memory | `/v1/memories` and `/v1/memories/search` | vendor-neutral record envelope |
 | MCP governance | `/v1/servers` and `/v1/tools/call` | protocol translation remains in MCP gateway |
+| provider governance | `/v1/provider-passports`, evaluations, and `:admit` | admission is an evaluated transition, not provider self-assertion |
+| execution evidence | `/v1/evidence-events` | append-only API; identity derives tenant and producer |
 | long operations | operation resources plus CloudEvents | cancellable and observable |
 | health | `/healthz` | must reveal no tenant/provider secrets |
 
@@ -17,12 +19,16 @@ Every published HTTP contract exposes OpenAPI, uses a major version in the path,
 
 - `Authorization: Bearer …` with exact audience and least-required scope;
 - mTLS workload identity on internal calls;
-- tenant context derived from identity and delegated only by approved callers;
+- identity-signed ViewSense Trust Envelope v1 containing tenant, delegated caller, subject,
+  purpose, classification, and request correlation;
 - W3C `traceparent` and stable `X-Request-ID`;
 - `Idempotency-Key` for retriable creates and tool calls with declared idempotency;
 - absolute deadline or remaining timeout budget.
 
-The current slice implements token audience/scope, mTLS, tenant delegation, and request ID. Trace propagation and idempotency persistence are required next steps.
+The current slice implements token audience/scope, mTLS, signed tenant delegation, request ID,
+provider passport/evaluation admission, and safe evidence APIs. Trace propagation,
+idempotency persistence, and external policy decisions are required next steps. The unsigned
+`X-ViewSense-Tenant` header is rejected; it is not a compatibility mechanism.
 
 ## Compatibility
 

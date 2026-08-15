@@ -2,7 +2,7 @@
 
 ## Decision
 
-ViewSense is an API-first, Kubernetes-native AI backbone, not a bundled AI product. It owns policy, routing, orchestration, audit context, and stable contracts. Model, memory, workflow, and MCP implementations are providers behind those contracts.
+ViewSense is an API-first, Kubernetes-native sovereign AI control and evidence fabric, not a bundled AI product. It owns portable trust envelopes, provider admission, policy, routing, orchestration, safe evidence context, and stable contracts. Model, memory, workflow, and MCP implementations are providers behind those contracts.
 
 ## System boundaries
 
@@ -13,6 +13,7 @@ ViewSense is an API-first, Kubernetes-native AI backbone, not a bundled AI produ
 | Provider | LLM inference, memory implementation, MCP execution | tenant authentication policy or public routing |
 | Data | storage owned by exactly one service/provider | cross-service tables or direct consumer access |
 | Security/operations | identity, policy decisions, secrets, telemetry, audit | business workflow semantics |
+| Governance/evidence | provider passports, evaluations, admissions, safe lineage events | provider payload data or execution credentials |
 
 ## Mandatory invariants
 
@@ -56,7 +57,8 @@ sequenceDiagram
 9. [Roadmap and maturity](50-roadmap/01-roadmap-maturity.md)
 10. [Enterprise integration and control matrix](60-enterprise/01-enterprise-integration-controls.md)
 11. [Agent runtime, ingestion, and workflow design](70-agentic/01-agent-runtime-ingestion-workflows.md)
+12. [Sovereign control and evidence fabric](80-future/01-sovereign-control-evidence-fabric.md)
 
 ## Implemented reference slice
 
-The current code proves edge-to-orchestrator-to-memory/LLM flow, MCP registration/invocation, mTLS, scoped tokens, database ownership, provider host allow-listing, network segmentation, and Kubernetes deployment. Streaming, enterprise identity federation, external policy engines, durable workflow execution, full OpenTelemetry, HA, backups, and real provider adapters remain roadmap work and are not represented as complete.
+The current code proves edge-to-orchestrator-to-memory/LLM flow, MCP registration/invocation, signed Trust Envelope tenant delegation, provider passport/evaluation admission, append-only safe evidence events, mTLS, scoped tokens, database ownership, provider host allow-listing, network segmentation, and Kubernetes deployment. Streaming, enterprise identity federation, external policy engines, durable workflow execution, cryptographic third-party passport verification, immutable evidence export, full OpenTelemetry, HA, backups, and real provider adapters remain roadmap work and are not represented as complete.

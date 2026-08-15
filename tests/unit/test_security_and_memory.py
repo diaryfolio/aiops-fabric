@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import time
+from datetime import UTC, datetime, timedelta
 
 import jwt
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from viewsense_common.auth import TokenVerifier
 
@@ -31,19 +33,24 @@ def test_token_verifier_enforces_audience_and_scope(tmp_path, monkeypatch):
     monkeypatch.setenv("VS_IDENTITY_PUBLIC_KEY_FILE", str(public_file))
     monkeypatch.setenv("VS_IDENTITY_ISSUER", "https://identity.test")
     now = int(time.time())
-    token = jwt.encode(
-        {
-            "iss": "https://identity.test",
-            "sub": "caller",
-            "aud": "memory-gateway",
-            "iat": now,
-            "exp": now + 60,
-            "scope": "memory.read",
+    claims = {
+        "iss": "https://identity.test",
+        "sub": "caller",
+        "aud": "memory-gateway",
+        "iat": now,
+        "exp": now + 60,
+        "scope": "memory.read",
+        "tenant_id": "tenant-a",
+        "vs_ctx": {
+            "version": "1",
             "tenant_id": "tenant-a",
+            "delegated_by": "caller",
+            "subject": "caller",
+            "purpose": "test",
+            "classification": "internal",
         },
-        private_key,
-        algorithm="RS256",
-    )
+    }
+    token = jwt.encode(claims, private_key, algorithm="RS256")
     principal = TokenVerifier("memory-gateway").verify(token, {"memory.read"})
     assert principal.tenant_id == "tenant-a"
     with pytest.raises(HTTPException) as denied:
@@ -52,6 +59,20 @@ def test_token_verifier_enforces_audience_and_scope(tmp_path, monkeypatch):
     with pytest.raises(HTTPException) as wrong_audience:
         TokenVerifier("llm-gateway").verify(token, {"memory.read"})
     assert wrong_audience.value.status_code == 401
+
+    without_envelope = {key: value for key, value in claims.items() if key != "vs_ctx"}
+    with pytest.raises(HTTPException) as unsigned_context:
+        TokenVerifier("memory-gateway").verify(
+            jwt.encode(without_envelope, private_key, algorithm="RS256"), {"memory.read"}
+        )
+    assert unsigned_context.value.status_code == 401
+
+    inconsistent = {**claims, "vs_ctx": {**claims["vs_ctx"], "tenant_id": "tenant-b"}}
+    with pytest.raises(HTTPException) as inconsistent_context:
+        TokenVerifier("memory-gateway").verify(
+            jwt.encode(inconsistent, private_key, algorithm="RS256"), {"memory.read"}
+        )
+    assert inconsistent_context.value.status_code == 401
 
 
 def test_provider_url_policy_is_exact_host_match(monkeypatch, tmp_path):
@@ -97,3 +118,34 @@ def test_chunking_preserves_content_and_hard_limit():
     assert all(0 < len(chunk) <= 240 for chunk in chunks)
     assert "First section" in chunks[0]
     assert any("Second section" in chunk for chunk in chunks)
+
+
+def test_governance_models_reject_self_admission_and_sensitive_evidence(monkeypatch, tmp_path):
+    _, public_key = _keys()
+    public_file = tmp_path / "public.pem"
+    public_file.write_bytes(public_key)
+    monkeypatch.setenv("VS_IDENTITY_PUBLIC_KEY_FILE", str(public_file))
+
+    from viewsense_governance.app import EvidenceEvent, ProviderPassport
+
+    passport = {
+        "name": "private-llm",
+        "kind": "llm",
+        "endpoint": "https://llm.example.test",
+        "residencies": ["gb"],
+        "data_classifications": ["internal"],
+        "owner": "platform-team",
+        "expires_at": datetime.now(UTC) + timedelta(days=1),
+    }
+    assert ProviderPassport(**passport).status == "draft"
+    with pytest.raises(ValidationError):
+        ProviderPassport(**passport, status="admitted")
+    with pytest.raises(ValidationError):
+        ProviderPassport(**{**passport, "endpoint": "http://llm.example.test"})
+    with pytest.raises(ValidationError):
+        EvidenceEvent(
+            run_id="run-1",
+            event_type="agent.observed",
+            outcome="success",
+            metadata={"safe": {"prompt": "must not be captured"}},
+        )

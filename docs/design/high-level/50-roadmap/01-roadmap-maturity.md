@@ -10,11 +10,11 @@ Deliver edge, orchestrator, LLM/memory/MCP gateways, mock providers, PostgreSQL/
 
 Exit: a clean cluster can deploy into an isolated namespace; missing authorization is denied; model, persisted memory, and MCP paths pass end to end.
 
-## Phase 1 — production identity and operations
+## Phase 1 — trustworthy control foundation
 
-Integrate enterprise OIDC, SPIFFE/mesh mTLS, external secrets, OPA-style policy decisions, OpenTelemetry, standardized errors/idempotency/deadlines, signed builds/SBOMs, GitOps overlays, PDB/HPA, and HA data services.
+Deliver signed Trust Envelopes, provider passport/evaluation/evidence APIs, committed schemas, standardized errors/idempotency/deadlines, separate signed images/SBOMs, and the operator skeleton. Integrate enterprise OIDC, SPIFFE/mesh mTLS, external secrets, OPA-style policy decisions, OpenTelemetry, GitOps overlays, PDB/HPA, and HA data services.
 
-Exit: identity/key rotation, negative security tests, telemetry continuity, backup/restore, rolling upgrade, and rollback pass in staging.
+Exit: header-based tenant spoofing is denied; identity/key rotation, provider admission/revocation, evidence export, negative security tests, telemetry continuity, backup/restore, rolling upgrade, and rollback pass in staging.
 
 ## Phase 2 — real replaceable providers
 
@@ -25,6 +25,8 @@ Exit: the same consumer conformance suite passes against each provider; a policy
 ## Phase 3 — durable agents, workflows, and governance
 
 Add the agent-runtime contract, durable run checkpoints, workflow-provider contract, n8n/Temporal/LangGraph adapters as selected, resumable ingestion jobs, human approvals, provider catalog lifecycle, evaluation service, prompt/config versioning, data retention/legal hold, chargeback, and an admin API/UI.
+
+Add an A2A gateway only after agent identity, delegation narrowing, remote passport validation, recursion budgets, and evidence correlation pass conformance tests.
 
 Exit: replay-safe workflows, bounded tool loops, audited approvals, and tenant onboarding/offboarding drills pass.
 

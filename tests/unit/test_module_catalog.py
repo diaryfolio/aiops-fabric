@@ -8,6 +8,7 @@ CATALOG_ROOT = REPO_ROOT / "fabric"
 EXPECTED_MODULES = {
     "agents",
     "core",
+    "governance",
     "identity",
     "ingestion",
     "llm",

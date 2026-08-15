@@ -66,6 +66,29 @@ spec:
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
+metadata: {name: governance-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: governance}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app.kubernetes.io/name: smoke}}}]
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    - to: [{podSelector: {matchLabels: {app.kubernetes.io/name: governance-db}}}]
+      ports: [{protocol: TCP, port: 5432}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: governance-db-policy}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: governance-db}}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app.kubernetes.io/name: governance}}}]
+      ports: [{protocol: TCP, port: 5432}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata: {name: llm-gateway-policy}
 spec:
   podSelector: {matchLabels: {app.kubernetes.io/name: llm-gateway}}
@@ -197,4 +220,5 @@ spec:
         - podSelector: {matchLabels: {app.kubernetes.io/name: ingestion}}
         - podSelector: {matchLabels: {app.kubernetes.io/name: memory-gateway}}
         - podSelector: {matchLabels: {app.kubernetes.io/name: mcp-gateway}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: governance}}
       ports: [{protocol: TCP, port: 8443}]

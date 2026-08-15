@@ -30,8 +30,8 @@ The current manifests intentionally touch only `viewsense-dev`. Production overl
 1. Verify context, namespace, admission policies, storage class, ingress, DNS, and network-policy enforcement.
 2. Install workload identity/certificate automation and external secret synchronization.
 3. Create the ViewSense namespaces and default-deny policies.
-4. Install owned data services or bind to managed equivalents.
-5. Deploy identity/policy dependencies, provider adapters, control services, then edge.
+4. Install owned data services or bind to managed equivalents, including the isolated governance store.
+5. Deploy identity/policy and governance dependencies, provider adapters, control services, then edge.
 6. Run conformance and zero-trust negative tests before accepting traffic.
 7. Register real providers through audited configuration and remove mocks.
 
@@ -51,7 +51,7 @@ Provider descriptors include locality, residency, classification ceiling, capabi
 
 ## Development workflow in this repository
 
-`scripts/k8s-deploy-dev.sh` builds the image, imports it to the active k3d cluster, creates generated Secrets, applies `deploy/kubernetes/base`, and waits for rollout in `viewsense-dev`. `scripts/k8s-test.sh` runs a namespaced smoke Job. The scripts validate their fixed namespace before mutation.
+`scripts/k8s-deploy-dev.sh` builds the image, imports it to the active k3d cluster, creates generated Secrets, applies `deploy/kubernetes/base`, and waits for rollout in `viewsense-dev`. The base includes an independently addressed governance API and database with explicit NetworkPolicy. `scripts/k8s-test.sh` runs a namespaced smoke Job that validates provider admission and evidence alongside the core AI path. The scripts validate their fixed namespace before mutation.
 
 ## Production gaps from the reference
 

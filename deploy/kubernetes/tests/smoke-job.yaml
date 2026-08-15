@@ -37,6 +37,7 @@ spec:
             - {name: VS_INGESTION_URL, value: "https://ingestion:8443"}
             - {name: VS_MEMORY_URL, value: "https://memory-gateway:8443"}
             - {name: VS_MCP_URL, value: "https://mcp-gateway:8443"}
+            - {name: VS_GOVERNANCE_URL, value: "https://governance:8443"}
           volumeMounts:
             - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
           resources: {requests: {cpu: 25m, memory: 64Mi}, limits: {cpu: 250m, memory: 192Mi}}

@@ -90,7 +90,6 @@ curl --silent --show-error --fail-with-body \
   --cert .viewsense/pki/smoke/tls.crt \
   --key .viewsense/pki/smoke/tls.key \
   --header "Authorization: Bearer ${TOKEN}" \
-  --header "X-ViewSense-Tenant: tenant-a" \
   --header "Content-Type: application/json" \
   --data '{
     "owner_id": "api-demo-user",
@@ -112,7 +111,6 @@ curl --silent --show-error --fail-with-body \
   --cert .viewsense/pki/smoke/tls.crt \
   --key .viewsense/pki/smoke/tls.key \
   --header "Authorization: Bearer ${TOKEN}" \
-  --header "X-ViewSense-Tenant: tenant-a" \
   --header "Content-Type: application/json" \
   --data '{
     "owner_id": "api-demo-user",
@@ -134,7 +132,6 @@ curl --silent --output /dev/null --write-out '%{http_code}\n' \
   --cacert .viewsense/pki/smoke/ca.crt \
   --cert .viewsense/pki/smoke/tls.crt \
   --key .viewsense/pki/smoke/tls.key \
-  --header "X-ViewSense-Tenant: tenant-a" \
   --header "Content-Type: application/json" \
   --data '{"owner_id":"api-demo-user","query":"London"}' \
   https://localhost:9445/v1/memories/search
@@ -162,7 +159,6 @@ curl --silent --output /dev/null --write-out '%{http_code}\n' \
   --cert .viewsense/pki/smoke/tls.crt \
   --key .viewsense/pki/smoke/tls.key \
   --header "Authorization: Bearer ${READ_TOKEN}" \
-  --header "X-ViewSense-Tenant: tenant-a" \
   --header "Content-Type: application/json" \
   --data '{"owner_id":"api-demo-user","content":"must be denied"}' \
   https://localhost:9445/v1/memories
@@ -192,5 +188,5 @@ kubectl logs -n viewsense-dev deployment/memory-postgres --tail=20
 
 - The `smoke` client, local issuer, static CA, mock providers, and deterministic embeddings are development-only.
 - Do not expose identity, memory, model, MCP, or provider services through public ingress.
-- Direct internal API tests use the trusted delegated tenant header. Public callers enter through the edge API, which derives tenant context from verified identity.
+- Direct internal API tests use the fixed-tenant `smoke` identity. Unsigned tenant headers are rejected; public and internal tenant context comes from the signed Trust Envelope.
 - Production validation additionally requires CNI negative connectivity tests, enterprise IdP/workload identity, external secret rotation, backup/restore, HA/failure exercises, and SIEM/OTel evidence.

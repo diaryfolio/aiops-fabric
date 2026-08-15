@@ -1,0 +1,21 @@
+{
+  "apiVersion": "fabric.viewsense.io/v1alpha1",
+  "kind": "Module",
+  "metadata": {"name": "governance", "title": "Provider governance and execution evidence"},
+  "spec": {
+    "maturity": "implemented-reference",
+    "implementationPaths": ["src/viewsense_governance/app.py"],
+    "contractPaths": [
+      "docs/design/high-level/80-future/01-sovereign-control-evidence-fabric.md",
+      "contracts/schemas/provider-passport-v1.schema.json",
+      "contracts/schemas/evidence-event-v1.schema.json"
+    ],
+    "helmPaths": ["modules.governance", "datastores.governance"],
+    "dataOwnership": ["provider passports", "evaluation and admission records", "safe execution evidence"],
+    "providers": [
+      {"name": "postgres-reference", "status": "bundled"},
+      {"name": "external-policy-engine", "status": "planned"},
+      {"name": "immutable-evidence-sink", "status": "planned"}
+    ]
+  }
+}

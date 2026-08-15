@@ -170,6 +170,20 @@ services:
       - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
     networks: [control, mcp-provider, registry-data]
 
+  governance:
+    <<: *app
+    depends_on:
+      governance-db:
+        condition: service_healthy
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_governance.app
+      VS_DATABASE_URL: postgresql://viewsense_governance:${VS_GOVERNANCE_DB_PASSWORD:?run scripts/bootstrap-dev-pki.sh}@governance-db:5432/viewsense_governance
+    volumes:
+      - ./.viewsense/pki/governance:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    networks: [control, governance-data]
+
   mock-mcp:
     <<: *app
     environment:
@@ -196,6 +210,22 @@ services:
       - registry-data:/var/lib/postgresql/data
     networks: [registry-data]
 
+  governance-db:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: viewsense_governance
+      POSTGRES_USER: viewsense_governance
+      POSTGRES_PASSWORD: ${VS_GOVERNANCE_DB_PASSWORD:?run scripts/bootstrap-dev-pki.sh}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U viewsense_governance -d viewsense_governance"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    volumes:
+      - governance-data:/var/lib/postgresql/data
+    networks: [governance-data]
+
   smoke:
     <<: *app
     profiles: [test]
@@ -209,6 +239,7 @@ services:
       VS_INGESTION_URL: https://ingestion:8443
       VS_MEMORY_URL: https://memory-gateway:8443
       VS_MCP_URL: https://mcp-gateway:8443
+      VS_GOVERNANCE_URL: https://governance:8443
     volumes:
       - ./.viewsense/pki/smoke:/run/viewsense/tls:ro
       - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
@@ -226,7 +257,10 @@ networks:
     internal: true
   registry-data:
     internal: true
+  governance-data:
+    internal: true
 
 volumes:
   memory-data: {}
   registry-data: {}
+  governance-data: {}

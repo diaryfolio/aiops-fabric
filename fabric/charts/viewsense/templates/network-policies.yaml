@@ -72,7 +72,7 @@ spec:
               app.kubernetes.io/instance: {{ $.Release.Name | quote }}
       ports:
         - protocol: TCP
-          port: {{ if or (eq $destination "memory-db") (eq $destination "registry-db") }}5432{{ else }}8443{{ end }}
+          port: {{ if or (eq $destination "memory-db") (eq $destination "registry-db") (eq $destination "governance-db") }}5432{{ else }}8443{{ end }}
     {{- end }}
     {{- end }}
     {{- if and (eq $name "llm-gateway") (ne $.Values.products.llm.product "mock-openai-compatible") }}
@@ -129,6 +129,26 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: mcp-gateway
+              app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      ports: [{protocol: TCP, port: 5432}]
+{{- end }}
+{{- if (index .Values.modules "governance").enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: governance-db-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: governance-db
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: governance
               app.kubernetes.io/instance: {{ .Release.Name | quote }}
       ports: [{protocol: TCP, port: 5432}]
 {{- end }}

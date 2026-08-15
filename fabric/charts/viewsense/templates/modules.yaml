@@ -89,6 +89,8 @@ spec:
             {{- else if eq $name "mcp-gateway" }}
             - {name: VS_DATABASE_URL, valueFrom: {secretKeyRef: {name: {{ $.Values.datastores.registry.credentialsSecret }}, key: url}}}
             - {name: VS_MCP_ALLOWED_HOSTS, value: {{ $.Values.products.mcp.allowedHosts | quote }}}
+            {{- else if eq $name "governance" }}
+            - {name: VS_DATABASE_URL, valueFrom: {secretKeyRef: {name: {{ $.Values.datastores.governance.credentialsSecret }}, key: url}}}
             {{- end }}
           volumeMounts:
             - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}

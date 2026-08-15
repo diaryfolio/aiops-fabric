@@ -69,6 +69,14 @@ modules:
     ingressFrom: [gateway]
     egressTo: [identity, memory-gateway, llm-gateway, mcp-gateway]
     resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
+  governance:
+    enabled: true
+    appModule: viewsense_governance.app
+    plane: sovereign-control
+    tlsSecret: tls-governance
+    ingressFrom: [smoke]
+    egressTo: [governance-db]
+    resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
   ingestion:
     enabled: true
     appModule: viewsense_ingestion.app
@@ -142,6 +150,10 @@ datastores:
   registry:
     image: postgres:16-bookworm
     credentialsSecret: registry-db-credentials
+    storage: 1Gi
+  governance:
+    image: postgres:16-bookworm
+    credentialsSecret: governance-db-credentials
     storage: 1Gi
 
 networkPolicy:

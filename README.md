@@ -2,6 +2,8 @@
 
 ViewSense is a portable, enterprise-controlled AI backbone. It gives applications one governed API while allowing LLM runtimes, memory products, vector stores, workflow engines, and MCP servers to run locally or in approved clouds and to be replaced independently.
 
+For a non-technical explanation of the business value, start with [BUSINESS_README.md](BUSINESS_README.md).
+
 This repository contains the architecture and an executable Kubernetes reference slice. The reference proves the main boundaries without requiring a GPU or external AI account:
 
 - edge API and request orchestrator;
@@ -10,6 +12,7 @@ This repository contains the architecture and an executable Kubernetes reference
 - MCP registry and invocation gateway with a test provider;
 - short-lived, audience-bound workload tokens plus mutual TLS on every API hop;
 - deny-by-default Kubernetes network policies and separate data stores.
+- cryptographically bound Trust Envelope delegation plus provider passport, evaluation-admission, and safe evidence APIs.
 
 The mock LLM and deterministic embedding are test adapters, not production AI models. Replace them with vLLM, OpenAI, Azure OpenAI, Mem0, or another contract-conforming provider without changing callers.
 

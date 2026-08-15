@@ -21,9 +21,17 @@ Human identity federates to the enterprise IdP using OIDC Authorization Code + P
 
 The development issuer uses client credentials and RS256 plus a generated CA to make these properties testable. It is not an enterprise IdP and must not be promoted.
 
-## Tenant and authorization
+## Tenant, Trust Envelope, and authorization
 
-The edge derives tenant from verified claims. Internal `X-ViewSense-Tenant` is delegation metadata accepted only with an authorized caller token; external caller headers cannot select a tenant. Data queries include tenant and owner/purpose predicates. Production adds policy decisions for classification, legal basis, retention, model class, connector action, and residency both before retrieval and after candidate retrieval.
+The edge derives tenant from verified claims. Tenant and business context are signed claims, never an unsigned transport header. Trust Envelope v1 binds tenant, delegating workload, subject, purpose, classification, request correlation, audience, scopes, and expiry. Only registered delegators may request tenant-bound downstream tokens; fixed-tenant clients cannot change tenant. Receivers reject legacy tenant headers, missing envelopes, audience mismatch, inconsistent top-level/envelope tenants, and unsupported versions.
+
+Production uses standards-based token exchange or equivalent workload delegation while retaining the ViewSense envelope schema. Each hop obtains a new audience token rather than forwarding a human token or mutable context header. Data queries include tenant and owner/purpose predicates. Production adds policy decisions for classification, legal basis, retention, model class, connector action, and residency both before retrieval and after candidate retrieval.
+
+## Provider and evidence trust
+
+Provider passports are untrusted assertions until signature, provenance, evaluation, ownership, expiry, residency, and policy checks succeed. Admission is time-bound and revocable. An admitted provider receives no credentials until workload identity and egress policy also allow the connection.
+
+Evidence APIs accept payload-minimized metadata only. Append-only API semantics do not make the reference PostgreSQL database an immutable audit store; production exports to an independently controlled integrity and retention system.
 
 ## MCP threat model
 
@@ -49,6 +57,8 @@ CI generates SBOMs, scans dependencies/images/IaC, signs artifacts and provenanc
 
 - missing/expired token, wrong audience, wrong scope, and untrusted client certificate;
 - caller-supplied tenant substitution and cross-tenant memory search;
+- missing/malformed Trust Envelope, fixed-tenant delegation attempt, and legacy tenant header;
+- expired/revoked/unevaluated provider admission and sensitive evidence metadata;
 - disallowed MCP URL, DNS/IP/redirect SSRF cases, and undeclared tool;
 - direct orchestrator-to-provider/database network attempts;
 - provider credential absence in callers;

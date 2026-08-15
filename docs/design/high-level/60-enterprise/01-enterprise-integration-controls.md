@@ -23,6 +23,8 @@ This document is the acceptance checklist for an enterprise installation. A feat
 | operations | SLOs, ownership, runbooks, incident/change management | OTel data plus enterprise ITSM/on-call webhooks/APIs | alert-to-ticket/page and incident exercise |
 | cost | tenant/provider/token/storage/tool attribution and limits | usage event schema and export API | showback reconciliation and tenant stop-loss test |
 | lifecycle | tenant/provider onboarding, offboarding, export, deletion | idempotent admin APIs and GitOps workflows | complete offboarding and credential/data cleanup evidence |
+| provider admission | expiring passports, capabilities, evaluations, residency, provenance and revocation | provider passport/evaluation APIs plus policy decision | expired/revoked/unevaluated provider cannot receive new traffic |
+| execution evidence | payload-minimized lineage and decision events | append-only evidence API and immutable export | reconstruct route/policy/approval sequence without sensitive payloads |
 
 ## JSON log schema
 
@@ -63,4 +65,4 @@ Applications emit JSON stdout, OpenMetrics, and OTLP using vendor-neutral semant
 
 ## Current reference status
 
-Implemented now: JSON access/runtime logs, request correlation propagation, mTLS, audience/scoped tokens, tenant context, restricted pods, network policies, API schemas, and positive/negative smoke tests. Designed integration points but not production implementations: enterprise OIDC/SCIM, external policy engine, OTel metrics/traces/collectors, immutable audit store, SIEM exporters, external secrets, HA/DR, autoscaling, supply-chain admission, and ITSM. Production readiness requires selecting and testing those integrations; the local issuer and mock providers do not satisfy them.
+Implemented now: JSON access/runtime logs, request correlation propagation, mTLS, audience/scoped tokens, signed Trust Envelope tenant delegation, provider passport/evaluation admission, append-only safe evidence metadata, restricted pods, network policies, API schemas, and positive/negative smoke tests. Designed integration points but not production implementations: enterprise OIDC/SCIM, external policy engine, signed third-party passports, evaluation runners/datasets, immutable evidence/audit store, OTel metrics/traces/collectors, SIEM exporters, external secrets, HA/DR, autoscaling, supply-chain admission, and ITSM. Production readiness requires selecting and testing those integrations; the local issuer and mock providers do not satisfy them.

@@ -10,11 +10,23 @@ from viewsense_common.settings import read_required
 
 
 @dataclass(frozen=True)
+class TrustEnvelope:
+    version: str
+    tenant_id: str
+    delegated_by: str
+    subject: str
+    purpose: str
+    classification: str
+    request_id: str | None
+
+
+@dataclass(frozen=True)
 class Principal:
     subject: str
     tenant_id: str | None
     scopes: frozenset[str]
     claims: dict
+    trust_envelope: TrustEnvelope | None
 
 
 class TokenVerifier:
@@ -43,11 +55,52 @@ class TokenVerifier:
         scopes = frozenset(str(claims.get("scope", "")).split())
         if not required_scopes.issubset(scopes):
             raise HTTPException(status_code=403, detail="insufficient token scope")
+        tenant_id = claims.get("tenant_id")
+        envelope_claim = claims.get("vs_ctx")
+        envelope = None
+        if tenant_id:
+            if not isinstance(envelope_claim, dict):
+                raise HTTPException(status_code=401, detail="signed trust envelope required")
+            required = {
+                "version",
+                "tenant_id",
+                "delegated_by",
+                "subject",
+                "purpose",
+                "classification",
+            }
+            if not required.issubset(envelope_claim) or envelope_claim.get("version") != "1":
+                raise HTTPException(status_code=401, detail="invalid trust envelope")
+            if envelope_claim.get("tenant_id") != tenant_id:
+                raise HTTPException(status_code=401, detail="inconsistent trust envelope tenant")
+            envelope = TrustEnvelope(
+                version="1",
+                tenant_id=str(tenant_id),
+                delegated_by=str(envelope_claim["delegated_by"]),
+                subject=str(envelope_claim["subject"]),
+                purpose=str(envelope_claim["purpose"]),
+                classification=str(envelope_claim["classification"]),
+                request_id=(
+                    str(envelope_claim["request_id"])
+                    if envelope_claim.get("request_id")
+                    else None
+                ),
+            )
+            if not all(
+                (
+                    envelope.delegated_by,
+                    envelope.subject,
+                    envelope.purpose,
+                    envelope.classification,
+                )
+            ):
+                raise HTTPException(status_code=401, detail="invalid trust envelope fields")
         return Principal(
             subject=str(claims["sub"]),
-            tenant_id=claims.get("tenant_id"),
+            tenant_id=tenant_id,
             scopes=scopes,
             claims=claims,
+            trust_envelope=envelope,
         )
 
     def from_request(self, request: Request, *required_scopes: str) -> Principal:
@@ -63,4 +116,6 @@ class TokenVerifier:
         request.state.principal = principal.subject
         if principal.tenant_id:
             request.state.tenant_id = principal.tenant_id
+        if principal.trust_envelope:
+            request.state.trust_envelope = principal.trust_envelope
         return principal

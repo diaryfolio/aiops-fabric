@@ -53,6 +53,13 @@ Implementations such as a built-in state machine or LangGraph remain behind this
 - output/evidence evaluation before committing memory or side effects;
 - complete model-route, policy-decision, approval, and MCP invocation audit.
 
+Every state transition emits the safe Evidence Event v1 contract. Together these events form the
+Agent Flight Recorder: ordered, tenant-bound records of route, policy/config versions, approvals,
+tool intent/outcome, budget decisions, and terminal outcome. Prompts, completions, memory,
+arguments, results, credentials, and personal data are excluded; protected artifacts are linked by
+opaque reference. The current governance API implements this evidence boundary while the durable
+agent state machine remains contract-only.
+
 ## Governed ingestion pipeline
 
 ```mermaid

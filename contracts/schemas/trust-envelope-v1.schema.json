@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://viewsense.local/schemas/trust-envelope-v1.schema.json",
+  "title": "ViewSense Trust Envelope v1",
+  "type": "object",
+  "required": ["version", "tenant_id", "delegated_by", "subject", "purpose", "classification"],
+  "properties": {
+    "version": {"const": "1"},
+    "tenant_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "delegated_by": {"type": "string", "minLength": 1, "maxLength": 128},
+    "subject": {"type": "string", "minLength": 1, "maxLength": 128},
+    "purpose": {"type": "string", "minLength": 1, "maxLength": 128},
+    "classification": {"type": "string", "minLength": 1, "maxLength": 128},
+    "request_id": {"type": ["string", "null"], "maxLength": 128}
+  },
+  "additionalProperties": false
+}

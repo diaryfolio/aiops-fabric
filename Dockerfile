@@ -24,6 +24,7 @@ COPY requirements-dev.txt /app/requirements-dev.txt
 RUN pip install --no-cache-dir --requirement /app/requirements-dev.txt
 COPY tests /app/tests
 COPY fabric /app/fabric
+COPY contracts /app/contracts
 COPY docs/design/high-level /app/docs/design/high-level
 COPY pyproject.toml /app/pyproject.toml
 USER 10001:10001

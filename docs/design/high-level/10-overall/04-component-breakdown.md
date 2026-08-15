@@ -40,6 +40,15 @@ The online agent runtime is a durable, bounded state machine that uses only the 
 
 Human identity federates through enterprise OIDC. Workload identity uses SPIFFE/SPIRE, mesh identity, or equivalent. An external policy decision point such as OPA can evaluate tenant, classification, model, memory purpose, tool side effects, and residency. The repository's issuer is development-only.
 
+## Governance and evidence
+
+The governance API owns provider passports, evaluation evidence, admission state, and safe
+execution evidence. Providers cannot mark themselves admitted, and callers cannot choose an
+evidence producer: both transitions are derived or enforced server-side. Its database is owned
+and unreachable from other applications. Production policy engines, signature/transparency
+verification, immutable evidence export, retention, and legal hold remain separate adapters and
+maturity gates.
+
 ## Observability and audit
 
 All components emit OpenTelemetry metrics/traces/log correlation. Security audit records are append-only, payload-minimized, and separate from troubleshooting logs. Audit pipeline failure follows tenant policy and can fail closed for regulated tool/model operations.
@@ -52,6 +61,7 @@ All components emit OpenTelemetry metrics/traces/log correlation. Security audit
 | memory provider | PostgreSQL + pgvector | Mem0 adapter, Qdrant adapter, managed vector service |
 | MCP provider | echo test server | certified enterprise MCP servers |
 | identity | local RSA token issuer | enterprise IdP + workload identity |
+| governance/evidence | owned PostgreSQL reference | external policy and immutable evidence sinks |
 | deployment | Kustomize development base | Helm/GitOps environment overlays |
 
 ## Repository module boundary

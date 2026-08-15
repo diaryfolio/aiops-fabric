@@ -5,6 +5,7 @@
 | Directory | Capability | Current maturity |
 |---|---|---|
 | `core/` | edge API and request orchestration | implemented reference |
+| `governance/` | provider passports, admission, and safe execution evidence | implemented reference |
 | `identity/` | development workload issuer and enterprise identity boundary | implemented reference |
 | `llm/` | model gateway and inference providers | implemented reference |
 | `memory/` | memory gateway and vector providers | implemented reference |

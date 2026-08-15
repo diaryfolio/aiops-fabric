@@ -36,3 +36,7 @@ Review GPU saturation, batching, KV-cache pressure, database index health, queue
 ## Operational readiness gate
 
 No production provider is enabled until it has ownership/on-call, dashboard and alerts, SLO, capacity test, failure-mode test, security review, data-flow record, backup/restore where stateful, credential rotation, and rollback/disable instructions.
+
+Provider readiness is represented by an expiring passport plus evaluation/admission records. Operations alert before passport, certificate, evidence, or evaluation expiry and automatically prevent new routing after revocation or expiry. The governance database is backed up and restored before dependent provider catalogs; production evidence is also exported to an independently administered immutable sink.
+
+Trust Envelope failures are separated into missing context, unsupported version, tenant inconsistency, delegation denial, expired token, wrong audience, and insufficient scope. They are security signals and must not trigger fallback to an unsigned header or a less-restricted provider.
