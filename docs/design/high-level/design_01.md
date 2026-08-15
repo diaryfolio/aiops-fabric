@@ -1,51 +1,62 @@
-# LatticeCore® Platform - Top-Level Design Index
+# ViewSense Architecture Index
 
-## Why this file is small
+## Decision
 
-This file is intentionally lightweight. Detailed content is split into modular design files so architecture remains readable, maintainable, and easy for LLM-driven workflows to consume.
+ViewSense is an API-first, Kubernetes-native AI backbone, not a bundled AI product. It owns policy, routing, orchestration, audit context, and stable contracts. Model, memory, workflow, and MCP implementations are providers behind those contracts.
 
-## Canonical Architecture Concept
+## System boundaries
 
-`Enterprise User or App -> API Gateway and Auth -> Fabric Layer`
+| Plane | Responsibility | Must not own |
+|---|---|---|
+| Edge | client authentication, quotas, request validation, public API | orchestration logic or provider credentials |
+| Control | orchestration, routing policy, provider catalog, MCP policy | provider databases or model runtime internals |
+| Provider | LLM inference, memory implementation, MCP execution | tenant authentication policy or public routing |
+| Data | storage owned by exactly one service/provider | cross-service tables or direct consumer access |
+| Security/operations | identity, policy decisions, secrets, telemetry, audit | business workflow semantics |
 
-Fabric Layer services: AI Orchestrator, Workflow Engine, LLM Gateway and Inference, Memory and RAG, MCP Runtime.
+## Mandatory invariants
 
-Cross-cutting controls across all Fabric services: Security and Zero Trust, Observability.
+1. All capabilities have versioned network contracts and machine-readable schemas.
+2. Each stateful domain owns its database; other domains use its API.
+3. Every request is authenticated, authorized, encrypted, tenant-scoped, and traceable at every hop.
+4. Provider selection is configuration/policy, never compiled into a caller.
+5. An adapter must pass the same contract suite before it can replace another provider.
+6. Kubernetes is the canonical packaging model; local Compose must preserve the same service boundaries.
+7. A provider failure is contained by deadlines, bounded retries, circuit breaking, and no implicit fallback across data-residency classes.
 
-## Design Hierarchy
+## Reference request path
 
-Top level:
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Edge
+    participant Orchestrator
+    participant Memory
+    participant LLM
+    Client->>Edge: POST /v1/responses + tenant token
+    Edge->>Orchestrator: mTLS + audience token + derived tenant
+    Orchestrator->>Memory: search through stable memory API
+    Memory-->>Orchestrator: policy-filtered memories
+    Orchestrator->>LLM: OpenAI-compatible completion request
+    LLM-->>Orchestrator: normalized completion
+    Orchestrator->>Memory: store interaction when enabled
+    Orchestrator-->>Client: response + request ID
+```
 
-- [docs/design/high-level/design_01.md](docs/design/high-level/design_01.md): architecture entry point and navigation.
+## Design set
 
-Modular level:
+1. [Objective and principles](10-overall/01-objective-principles.md)
+2. [Runtime topology and flows](10-overall/02-runtime-topology-flow.md)
+3. [API and integration standards](10-overall/03-api-integration-standards.md)
+4. [Component and ownership model](10-overall/04-component-breakdown.md)
+5. [Operations baseline](10-overall/05-operations-and-roadmap.md)
+6. [Kubernetes deployment and sizing](20-deployment/01-deployment-topology-sizing.md)
+7. [Zero-trust security model](30-security/01-zero-trust.md)
+8. [Day-2 operations](40-ops/01-day2-operations-sre.md)
+9. [Roadmap and maturity](50-roadmap/01-roadmap-maturity.md)
+10. [Enterprise integration and control matrix](60-enterprise/01-enterprise-integration-controls.md)
+11. [Agent runtime, ingestion, and workflow design](70-agentic/01-agent-runtime-ingestion-workflows.md)
 
-1. [docs/design/high-level/10-overall/01-objective-principles.md](docs/design/high-level/10-overall/01-objective-principles.md)
-2. [docs/design/high-level/10-overall/02-runtime-topology-flow.md](docs/design/high-level/10-overall/02-runtime-topology-flow.md)
-3. [docs/design/high-level/10-overall/03-api-integration-standards.md](docs/design/high-level/10-overall/03-api-integration-standards.md)
-4. [docs/design/high-level/10-overall/04-component-breakdown.md](docs/design/high-level/10-overall/04-component-breakdown.md)
-5. [docs/design/high-level/10-overall/05-operations-and-roadmap.md](docs/design/high-level/10-overall/05-operations-and-roadmap.md)
+## Implemented reference slice
 
-Companion design set:
-
-- [docs/design/high-level/20-deployment/01-deployment-topology-sizing.md](docs/design/high-level/20-deployment/01-deployment-topology-sizing.md): multi-cloud deployment topology and sizing.
-- [docs/design/high-level/30-security/01-zero-trust.md](docs/design/high-level/30-security/01-zero-trust.md): security, governance, and zero-trust model.
-- [docs/design/high-level/40-ops/01-day2-operations-sre.md](docs/design/high-level/40-ops/01-day2-operations-sre.md): day-2 operations and SRE model.
-- [docs/design/high-level/50-roadmap/01-roadmap-maturity.md](docs/design/high-level/50-roadmap/01-roadmap-maturity.md): phased implementation roadmap and maturity model.
-
-## Naming Convention
-
-- Top-level design anchors: design_0x.md
-- Modular design units: <domain>/<sequence>-<topic>.md
-
-Example:
-
-- 10-overall/03-api-integration-standards.md
-
-## Design Sync Rule
-
-When major platform changes are introduced:
-
-1. Update the affected modular files first.
-2. Update companion design documents where relevant.
-3. Keep this index updated if hierarchy or naming changes.
+The current code proves edge-to-orchestrator-to-memory/LLM flow, MCP registration/invocation, mTLS, scoped tokens, database ownership, provider host allow-listing, network segmentation, and Kubernetes deployment. Streaming, enterprise identity federation, external policy engines, durable workflow execution, full OpenTelemetry, HA, backups, and real provider adapters remain roadmap work and are not represented as complete.

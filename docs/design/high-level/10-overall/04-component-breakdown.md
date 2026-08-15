@@ -1,49 +1,55 @@
-# Design 10.4 - Component Breakdown
+# ViewSense Component and Ownership Model
 
-## Concept Alignment
+## Edge API
 
-Canonical flow: `Enterprise User or App -> API Gateway and Auth -> Fabric Layer`.
+Owns external authentication integration, tenant derivation, schema validation, rate limits, and public compatibility. It does not select provider URLs, hold provider credentials, or implement agent loops.
 
-The layers below define Fabric internals. Security and Zero Trust plus Observability are cross-cutting requirements for every layer.
+## Request orchestrator
 
-## Layer A - LLM Hosting and Inference
+Owns a bounded request state machine: policy evaluation, context assembly, inference calls, optional approved tools, and response assembly. Long-running durable business processes belong behind a workflow-provider API, not inside request handlers.
 
-- Primary serving runtime: vLLM.
-- Optional runtimes: Triton and Ollama through abstraction gateway.
-- Autoscaling: KEDA and optional Knative profiles.
-- Caching and async: Redis and queue bus integration.
+## LLM gateway
 
-## Layer B - Memory and Context
+Normalizes model IDs, capabilities, errors, token usage, routing, deadlines, and provider credentials. Local vLLM/Ollama and cloud OpenAI/Azure/other endpoints are adapters. The gateway must not store conversation memory.
 
-- Context API and retrieval pipeline with hybrid search.
-- Storage separation:
-  - vector index
-  - metadata catalog
-  - object artifacts
-- Recommended stores: Qdrant or Milvus or pgvector, PostgreSQL, object storage.
+## Memory gateway and providers
 
-## Layer C - Hosted MCP Runtime
+The gateway enforces tenant/purpose policy and exposes canonical records. A provider implements storage, embedding, retrieval, filtering, retention, and export. The reference provider uses PostgreSQL/pgvector; Mem0 is a future adapter, not a replacement for the stable gateway.
 
-- Control plane for registry, policy, and lifecycle.
-- Data plane for isolated connector execution.
-- Security: workload identity, short-lived secrets, RBAC/ABAC policy checks.
+Memory is split conceptually into:
 
-## Layer D - Workflow Orchestration
+- episodic/user memory;
+- governed knowledge/RAG documents;
+- short-lived request/session context.
 
-- n8n or Tines for deterministic orchestration.
-- Supports synchronous and asynchronous execution paths.
-- Enforced loop guardrails for cost and safety.
+These have different retention and authorization and must not be merged into one unclassified vector collection.
 
-## Layer E - Cloud-Native Foundation
+## MCP gateway and runtime
 
-- GitOps with Argo CD or Flux.
-- Service mesh with mTLS and traffic policy.
-- Policy enforcement with OPA/Gatekeeper or Kyverno.
-- Multi-cloud deployment baseline (EKS/GKE/AKS/bare metal).
+The gateway owns the approved server catalog, capability metadata, policy checks, invocation audit, timeouts, and egress allow-list. MCP servers run as untrusted provider workloads with dedicated identities and network/credential boundaries. Registration never grants execution automatically; production adds certification and approval state.
 
-## Replaceability Matrix
+## Workflow provider (planned)
 
-- LLM runtime: swappable via gateway contract.
-- Vector database: swappable behind retrieval API.
-- Workflow engine: swappable behind orchestration API.
-- MCP connector provider: swappable via connector contract.
+Durable workflow engines (Temporal, Argo Workflows, n8n, or an enterprise product) implement a workflow contract. The platform does not assume that a low-code engine is safe for autonomous tool loops. Workflow definitions are versioned artifacts with bounded execution and human approval points.
+
+## Agent runtime and ingestion
+
+The online agent runtime is a durable, bounded state machine that uses only the LLM, memory, policy, workflow, and MCP APIs. It owns run/checkpoint state but no provider data. The ingestion service owns document ingestion jobs and deterministic chunking; parsing, enrichment, embeddings, and vector persistence remain replaceable stages. See the dedicated agentic design for tool loops, approvals, ingestion poisoning controls, and workflow-provider selection.
+
+## Identity and policy
+
+Human identity federates through enterprise OIDC. Workload identity uses SPIFFE/SPIRE, mesh identity, or equivalent. An external policy decision point such as OPA can evaluate tenant, classification, model, memory purpose, tool side effects, and residency. The repository's issuer is development-only.
+
+## Observability and audit
+
+All components emit OpenTelemetry metrics/traces/log correlation. Security audit records are append-only, payload-minimized, and separate from troubleshooting logs. Audit pipeline failure follows tenant policy and can fail closed for regulated tool/model operations.
+
+## Reference versus replaceable choices
+
+| Capability | Reference slice | Replaceable examples |
+|---|---|---|
+| LLM provider | deterministic mock | vLLM, Ollama, OpenAI, Azure OpenAI |
+| memory provider | PostgreSQL + pgvector | Mem0 adapter, Qdrant adapter, managed vector service |
+| MCP provider | echo test server | certified enterprise MCP servers |
+| identity | local RSA token issuer | enterprise IdP + workload identity |
+| deployment | Kustomize development base | Helm/GitOps environment overlays |

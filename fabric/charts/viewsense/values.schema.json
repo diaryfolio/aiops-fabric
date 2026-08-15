@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["global", "products", "modules"],
+  "properties": {
+    "products": {
+      "type": "object",
+      "required": ["identity", "llm", "memory", "ingestion", "agentRuntime", "workflow", "mcp"],
+      "properties": {
+        "identity": {"type": "object", "properties": {"product": {"enum": ["development", "external-oidc"]}}},
+        "llm": {
+          "type": "object",
+          "required": ["product", "endpoint", "audience"],
+          "properties": {
+            "product": {"enum": ["mock-openai-compatible", "vllm", "openai-compatible-external"]},
+            "endpoint": {"type": "string", "pattern": "^https://"},
+            "audience": {"type": "string", "minLength": 1},
+            "externalEgress": {"$ref": "#/$defs/externalEgress"}
+          }
+        },
+        "memory": {
+          "type": "object",
+          "required": ["product", "endpoint", "audience"],
+          "properties": {
+            "product": {"enum": ["postgres-pgvector", "mem0-compatible-external"]},
+            "endpoint": {"type": "string", "pattern": "^https://"},
+            "audience": {"type": "string", "minLength": 1},
+            "externalEgress": {"$ref": "#/$defs/externalEgress"}
+          }
+        },
+        "ingestion": {"type": "object", "properties": {"product": {"enum": ["builtin-deterministic", "unstructured-compatible-external"]}}},
+        "agentRuntime": {"type": "object", "properties": {"enabled": {"type": "boolean"}, "product": {"enum": ["contract-only", "builtin", "langgraph-compatible-external"]}}},
+        "workflow": {"type": "object", "properties": {"enabled": {"type": "boolean"}, "product": {"enum": ["none", "n8n", "temporal", "argo-workflows", "external"]}}},
+        "mcp": {"type": "object", "required": ["mockProviderEnabled", "allowedHosts"]}
+      }
+    },
+    "modules": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["enabled", "appModule", "plane", "tlsSecret"],
+        "properties": {"enabled": {"type": "boolean"}}
+      }
+    }
+  },
+  "$defs": {
+    "externalEgress": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["cidr", "port"],
+        "properties": {
+          "cidr": {"type": "string", "pattern": "^[0-9a-fA-F:.]+/[0-9]{1,3}$"},
+          "port": {"type": "integer", "minimum": 1, "maximum": 65535}
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

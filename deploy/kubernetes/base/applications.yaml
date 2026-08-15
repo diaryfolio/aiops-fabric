@@ -1,0 +1,505 @@
+apiVersion: v1
+kind: Service
+metadata: {name: identity}
+spec:
+  selector: {app.kubernetes.io/name: identity}
+  ports: [{name: https, port: 8443, targetPort: https}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: identity}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: identity}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: identity, viewsense.io/plane: security}
+    spec:
+      serviceAccountName: identity
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: identity
+          image: viewsense-core:dev
+          imagePullPolicy: Never
+          ports: [{name: https, containerPort: 8443}]
+          env:
+            - {name: VS_APP_MODULE, value: viewsense_identity.app}
+            - {name: VS_PORT, value: "8443"}
+            - {name: VS_IDENTITY_ISSUER, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_PRIVATE_KEY_FILE, value: /run/viewsense/identity/signing.key}
+            - {name: VS_IDENTITY_CLIENTS_FILE, value: /run/viewsense/identity/clients.json}
+            - {name: VS_TLS_CA_FILE, value: /run/viewsense/tls/ca.crt}
+            - {name: VS_TLS_CERT_FILE, value: /run/viewsense/tls/tls.crt}
+            - {name: VS_TLS_KEY_FILE, value: /run/viewsense/tls/tls.key}
+          volumeMounts:
+            - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
+            - {name: identity-material, mountPath: /run/viewsense/identity, readOnly: true}
+          readinessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 2, periodSeconds: 3}
+          livenessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 10, periodSeconds: 10}
+          resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+      volumes:
+        - {name: tls, secret: {secretName: tls-identity, defaultMode: 0444}}
+        - {name: identity-material, secret: {secretName: identity-material, defaultMode: 0444}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: gateway}
+spec:
+  selector: {app.kubernetes.io/name: gateway}
+  ports: [{name: https, port: 8443, targetPort: https}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: gateway}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: gateway}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: gateway, viewsense.io/plane: edge}
+    spec:
+      serviceAccountName: gateway
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: gateway
+          image: viewsense-core:dev
+          imagePullPolicy: Never
+          ports: [{name: https, containerPort: 8443}]
+          env: &gateway-env
+            - {name: VS_APP_MODULE, value: viewsense_gateway.app}
+            - {name: VS_PORT, value: "8443"}
+            - {name: VS_IDENTITY_URL, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_ISSUER, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_PUBLIC_KEY_FILE, value: /run/viewsense/identity/signing.pub}
+            - {name: VS_TLS_CA_FILE, value: /run/viewsense/tls/ca.crt}
+            - {name: VS_TLS_CERT_FILE, value: /run/viewsense/tls/tls.crt}
+            - {name: VS_TLS_KEY_FILE, value: /run/viewsense/tls/tls.key}
+            - {name: VS_CLIENT_ID, value: gateway}
+            - {name: VS_CLIENT_SECRET, valueFrom: {secretKeyRef: {name: workload-credentials, key: gateway}}}
+            - {name: VS_ORCHESTRATOR_URL, value: "https://orchestrator:8443"}
+          volumeMounts: &gateway-mounts
+            - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
+            - {name: identity-public, mountPath: /run/viewsense/identity, readOnly: true}
+          readinessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 2, periodSeconds: 3}
+          livenessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 10, periodSeconds: 10}
+          resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+      volumes: &gateway-volumes
+        - {name: tls, secret: {secretName: tls-gateway, defaultMode: 0444}}
+        - {name: identity-public, secret: {secretName: identity-public, defaultMode: 0444}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: orchestrator}
+spec:
+  selector: {app.kubernetes.io/name: orchestrator}
+  ports: [{name: https, port: 8443, targetPort: https}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: orchestrator}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: orchestrator}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: orchestrator, viewsense.io/plane: control}
+    spec:
+      serviceAccountName: orchestrator
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: orchestrator
+          image: viewsense-core:dev
+          imagePullPolicy: Never
+          ports: [{name: https, containerPort: 8443}]
+          env:
+            - {name: VS_APP_MODULE, value: viewsense_orchestrator.app}
+            - {name: VS_PORT, value: "8443"}
+            - {name: VS_IDENTITY_URL, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_ISSUER, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_PUBLIC_KEY_FILE, value: /run/viewsense/identity/signing.pub}
+            - {name: VS_TLS_CA_FILE, value: /run/viewsense/tls/ca.crt}
+            - {name: VS_TLS_CERT_FILE, value: /run/viewsense/tls/tls.crt}
+            - {name: VS_TLS_KEY_FILE, value: /run/viewsense/tls/tls.key}
+            - {name: VS_CLIENT_ID, value: orchestrator}
+            - {name: VS_CLIENT_SECRET, valueFrom: {secretKeyRef: {name: workload-credentials, key: orchestrator}}}
+            - {name: VS_MEMORY_URL, value: "https://memory-gateway:8443"}
+            - {name: VS_LLM_URL, value: "https://llm-gateway:8443"}
+          volumeMounts:
+            - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
+            - {name: identity-public, mountPath: /run/viewsense/identity, readOnly: true}
+          readinessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 2, periodSeconds: 3}
+          livenessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 10, periodSeconds: 10}
+          resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+      volumes:
+        - {name: tls, secret: {secretName: tls-orchestrator, defaultMode: 0444}}
+        - {name: identity-public, secret: {secretName: identity-public, defaultMode: 0444}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: llm-gateway}
+spec: {selector: {app.kubernetes.io/name: llm-gateway}, ports: [{name: https, port: 8443, targetPort: https}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: llm-gateway}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: llm-gateway}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: llm-gateway, viewsense.io/plane: llm-control}
+    spec:
+      serviceAccountName: llm-gateway
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: llm-gateway
+          image: viewsense-core:dev
+          imagePullPolicy: Never
+          ports: [{name: https, containerPort: 8443}]
+          env:
+            - {name: VS_APP_MODULE, value: viewsense_llm_gateway.app}
+            - {name: VS_PORT, value: "8443"}
+            - {name: VS_IDENTITY_URL, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_ISSUER, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_PUBLIC_KEY_FILE, value: /run/viewsense/identity/signing.pub}
+            - {name: VS_TLS_CA_FILE, value: /run/viewsense/tls/ca.crt}
+            - {name: VS_TLS_CERT_FILE, value: /run/viewsense/tls/tls.crt}
+            - {name: VS_TLS_KEY_FILE, value: /run/viewsense/tls/tls.key}
+            - {name: VS_CLIENT_ID, value: llm-gateway}
+            - {name: VS_CLIENT_SECRET, valueFrom: {secretKeyRef: {name: workload-credentials, key: llm-gateway}}}
+            - {name: VS_LLM_PROVIDER_URL, value: "https://mock-llm:8443"}
+            - {name: VS_LLM_PROVIDER_AUDIENCE, value: mock-llm}
+          volumeMounts:
+            - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
+            - {name: identity-public, mountPath: /run/viewsense/identity, readOnly: true}
+          readinessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 2, periodSeconds: 3}
+          livenessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 10, periodSeconds: 10}
+          resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+      volumes:
+        - {name: tls, secret: {secretName: tls-llm-gateway, defaultMode: 0444}}
+        - {name: identity-public, secret: {secretName: identity-public, defaultMode: 0444}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: mock-llm}
+spec: {selector: {app.kubernetes.io/name: mock-llm}, ports: [{name: https, port: 8443, targetPort: https}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: mock-llm}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: mock-llm}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: mock-llm, viewsense.io/plane: llm-provider}
+    spec:
+      serviceAccountName: mock-llm
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: mock-llm
+          image: viewsense-core:dev
+          imagePullPolicy: Never
+          ports: [{name: https, containerPort: 8443}]
+          env:
+            - {name: VS_APP_MODULE, value: viewsense_mock_llm.app}
+            - {name: VS_PORT, value: "8443"}
+            - {name: VS_IDENTITY_ISSUER, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_PUBLIC_KEY_FILE, value: /run/viewsense/identity/signing.pub}
+            - {name: VS_TLS_CA_FILE, value: /run/viewsense/tls/ca.crt}
+            - {name: VS_TLS_CERT_FILE, value: /run/viewsense/tls/tls.crt}
+            - {name: VS_TLS_KEY_FILE, value: /run/viewsense/tls/tls.key}
+          volumeMounts:
+            - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
+            - {name: identity-public, mountPath: /run/viewsense/identity, readOnly: true}
+          readinessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 2, periodSeconds: 3}
+          livenessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 10, periodSeconds: 10}
+          resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+      volumes:
+        - {name: tls, secret: {secretName: tls-mock-llm, defaultMode: 0444}}
+        - {name: identity-public, secret: {secretName: identity-public, defaultMode: 0444}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: memory-gateway}
+spec: {selector: {app.kubernetes.io/name: memory-gateway}, ports: [{name: https, port: 8443, targetPort: https}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: memory-gateway}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: memory-gateway}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: memory-gateway, viewsense.io/plane: memory-control}
+    spec:
+      serviceAccountName: memory-gateway
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: memory-gateway
+          image: viewsense-core:dev
+          imagePullPolicy: Never
+          ports: [{name: https, containerPort: 8443}]
+          env:
+            - {name: VS_APP_MODULE, value: viewsense_memory_gateway.app}
+            - {name: VS_PORT, value: "8443"}
+            - {name: VS_IDENTITY_URL, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_ISSUER, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_PUBLIC_KEY_FILE, value: /run/viewsense/identity/signing.pub}
+            - {name: VS_TLS_CA_FILE, value: /run/viewsense/tls/ca.crt}
+            - {name: VS_TLS_CERT_FILE, value: /run/viewsense/tls/tls.crt}
+            - {name: VS_TLS_KEY_FILE, value: /run/viewsense/tls/tls.key}
+            - {name: VS_CLIENT_ID, value: memory-gateway}
+            - {name: VS_CLIENT_SECRET, valueFrom: {secretKeyRef: {name: workload-credentials, key: memory-gateway}}}
+            - {name: VS_MEMORY_PROVIDER_URL, value: "https://memory-postgres:8443"}
+            - {name: VS_MEMORY_PROVIDER_AUDIENCE, value: memory-postgres}
+          volumeMounts:
+            - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
+            - {name: identity-public, mountPath: /run/viewsense/identity, readOnly: true}
+          readinessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 2, periodSeconds: 3}
+          livenessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 10, periodSeconds: 10}
+          resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+      volumes:
+        - {name: tls, secret: {secretName: tls-memory-gateway, defaultMode: 0444}}
+        - {name: identity-public, secret: {secretName: identity-public, defaultMode: 0444}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: memory-postgres}
+spec: {selector: {app.kubernetes.io/name: memory-postgres}, ports: [{name: https, port: 8443, targetPort: https}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: memory-postgres}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: memory-postgres}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: memory-postgres, viewsense.io/plane: memory-provider}
+    spec:
+      serviceAccountName: memory-postgres
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: memory-postgres
+          image: viewsense-core:dev
+          imagePullPolicy: Never
+          ports: [{name: https, containerPort: 8443}]
+          env:
+            - {name: VS_APP_MODULE, value: viewsense_memory_postgres.app}
+            - {name: VS_PORT, value: "8443"}
+            - {name: VS_IDENTITY_ISSUER, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_PUBLIC_KEY_FILE, value: /run/viewsense/identity/signing.pub}
+            - {name: VS_TLS_CA_FILE, value: /run/viewsense/tls/ca.crt}
+            - {name: VS_TLS_CERT_FILE, value: /run/viewsense/tls/tls.crt}
+            - {name: VS_TLS_KEY_FILE, value: /run/viewsense/tls/tls.key}
+            - {name: VS_DATABASE_URL, valueFrom: {secretKeyRef: {name: memory-db-credentials, key: url}}}
+          volumeMounts:
+            - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
+            - {name: identity-public, mountPath: /run/viewsense/identity, readOnly: true}
+          readinessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 3, periodSeconds: 3}
+          livenessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 15, periodSeconds: 10}
+          resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+      volumes:
+        - {name: tls, secret: {secretName: tls-memory-postgres, defaultMode: 0444}}
+        - {name: identity-public, secret: {secretName: identity-public, defaultMode: 0444}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: mcp-gateway}
+spec: {selector: {app.kubernetes.io/name: mcp-gateway}, ports: [{name: https, port: 8443, targetPort: https}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: mcp-gateway}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: mcp-gateway}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: mcp-gateway, viewsense.io/plane: mcp-control}
+    spec:
+      serviceAccountName: mcp-gateway
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: mcp-gateway
+          image: viewsense-core:dev
+          imagePullPolicy: Never
+          ports: [{name: https, containerPort: 8443}]
+          env:
+            - {name: VS_APP_MODULE, value: viewsense_mcp_gateway.app}
+            - {name: VS_PORT, value: "8443"}
+            - {name: VS_IDENTITY_URL, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_ISSUER, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_PUBLIC_KEY_FILE, value: /run/viewsense/identity/signing.pub}
+            - {name: VS_TLS_CA_FILE, value: /run/viewsense/tls/ca.crt}
+            - {name: VS_TLS_CERT_FILE, value: /run/viewsense/tls/tls.crt}
+            - {name: VS_TLS_KEY_FILE, value: /run/viewsense/tls/tls.key}
+            - {name: VS_CLIENT_ID, value: mcp-gateway}
+            - {name: VS_CLIENT_SECRET, valueFrom: {secretKeyRef: {name: workload-credentials, key: mcp-gateway}}}
+            - {name: VS_DATABASE_URL, valueFrom: {secretKeyRef: {name: registry-db-credentials, key: url}}}
+            - {name: VS_MCP_ALLOWED_HOSTS, value: mock-mcp}
+          volumeMounts:
+            - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
+            - {name: identity-public, mountPath: /run/viewsense/identity, readOnly: true}
+          readinessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 3, periodSeconds: 3}
+          livenessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 15, periodSeconds: 10}
+          resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+      volumes:
+        - {name: tls, secret: {secretName: tls-mcp-gateway, defaultMode: 0444}}
+        - {name: identity-public, secret: {secretName: identity-public, defaultMode: 0444}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: mock-mcp}
+spec: {selector: {app.kubernetes.io/name: mock-mcp}, ports: [{name: https, port: 8443, targetPort: https}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: mock-mcp}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: mock-mcp}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: mock-mcp, viewsense.io/plane: mcp-provider}
+    spec:
+      serviceAccountName: mock-mcp
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: mock-mcp
+          image: viewsense-core:dev
+          imagePullPolicy: Never
+          ports: [{name: https, containerPort: 8443}]
+          env:
+            - {name: VS_APP_MODULE, value: viewsense_mock_mcp.app}
+            - {name: VS_PORT, value: "8443"}
+            - {name: VS_IDENTITY_ISSUER, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_PUBLIC_KEY_FILE, value: /run/viewsense/identity/signing.pub}
+            - {name: VS_TLS_CA_FILE, value: /run/viewsense/tls/ca.crt}
+            - {name: VS_TLS_CERT_FILE, value: /run/viewsense/tls/tls.crt}
+            - {name: VS_TLS_KEY_FILE, value: /run/viewsense/tls/tls.key}
+          volumeMounts:
+            - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
+            - {name: identity-public, mountPath: /run/viewsense/identity, readOnly: true}
+          readinessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 2, periodSeconds: 3}
+          livenessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 10, periodSeconds: 10}
+          resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+      volumes:
+        - {name: tls, secret: {secretName: tls-mock-mcp, defaultMode: 0444}}
+        - {name: identity-public, secret: {secretName: identity-public, defaultMode: 0444}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: ingestion}
+spec: {selector: {app.kubernetes.io/name: ingestion}, ports: [{name: https, port: 8443, targetPort: https}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ingestion}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: ingestion}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: ingestion, viewsense.io/plane: ingestion}
+    spec:
+      serviceAccountName: ingestion
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: ingestion
+          image: viewsense-core:dev
+          imagePullPolicy: Never
+          ports: [{name: https, containerPort: 8443}]
+          env:
+            - {name: VS_APP_MODULE, value: viewsense_ingestion.app}
+            - {name: VS_PORT, value: "8443"}
+            - {name: VS_IDENTITY_URL, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_ISSUER, value: "https://identity:8443"}
+            - {name: VS_IDENTITY_PUBLIC_KEY_FILE, value: /run/viewsense/identity/signing.pub}
+            - {name: VS_TLS_CA_FILE, value: /run/viewsense/tls/ca.crt}
+            - {name: VS_TLS_CERT_FILE, value: /run/viewsense/tls/tls.crt}
+            - {name: VS_TLS_KEY_FILE, value: /run/viewsense/tls/tls.key}
+            - {name: VS_CLIENT_ID, value: ingestion}
+            - {name: VS_CLIENT_SECRET, valueFrom: {secretKeyRef: {name: workload-credentials, key: ingestion}}}
+            - {name: VS_MEMORY_URL, value: "https://memory-gateway:8443"}
+          volumeMounts:
+            - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
+            - {name: identity-public, mountPath: /run/viewsense/identity, readOnly: true}
+          readinessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 2, periodSeconds: 3}
+          livenessProbe: {tcpSocket: {port: https}, initialDelaySeconds: 10, periodSeconds: 10}
+          resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+      volumes:
+        - {name: tls, secret: {secretName: tls-ingestion, defaultMode: 0444}}
+        - {name: identity-public, secret: {secretName: identity-public, defaultMode: 0444}}

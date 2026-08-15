@@ -1,0 +1,82 @@
+{{- if eq .Values.products.memory.product "postgres-pgvector" }}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: memory-db, labels: {app.kubernetes.io/part-of: viewsense}}
+spec:
+  selector: {app.kubernetes.io/name: memory-db, app.kubernetes.io/instance: {{ .Release.Name }}}
+  ports: [{name: postgres, port: 5432, targetPort: postgres}]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: memory-db}
+spec:
+  serviceName: memory-db
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: memory-db, app.kubernetes.io/instance: {{ .Release.Name }}}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: memory-db, app.kubernetes.io/instance: {{ .Release.Name }}, app.kubernetes.io/part-of: viewsense, viewsense.io/plane: memory-data}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {fsGroup: 999, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: postgres
+          image: {{ .Values.datastores.memory.image }}
+          imagePullPolicy: IfNotPresent
+          ports: [{name: postgres, containerPort: 5432}]
+          env:
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+            - {name: POSTGRES_DB, value: viewsense_memory}
+            - {name: POSTGRES_USER, value: viewsense_memory}
+            - {name: POSTGRES_PASSWORD, valueFrom: {secretKeyRef: {name: {{ .Values.datastores.memory.credentialsSecret }}, key: password}}}
+          readinessProbe: {exec: {command: [pg_isready, -U, viewsense_memory, -d, viewsense_memory]}, initialDelaySeconds: 3, periodSeconds: 3}
+          livenessProbe: {exec: {command: [pg_isready, -U, viewsense_memory, -d, viewsense_memory]}, initialDelaySeconds: 15, periodSeconds: 10}
+          resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {cpu: "1", memory: 1Gi}}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}, runAsNonRoot: true, runAsUser: 999}
+          volumeMounts: [{name: data, mountPath: /var/lib/postgresql/data}]
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: {{ .Values.datastores.memory.storage }}}}}
+{{- end }}
+{{- if (index .Values.modules "mcp-gateway").enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: registry-db, labels: {app.kubernetes.io/part-of: viewsense}}
+spec:
+  selector: {app.kubernetes.io/name: registry-db, app.kubernetes.io/instance: {{ .Release.Name }}}
+  ports: [{name: postgres, port: 5432, targetPort: postgres}]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: registry-db}
+spec:
+  serviceName: registry-db
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: registry-db, app.kubernetes.io/instance: {{ .Release.Name }}}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: registry-db, app.kubernetes.io/instance: {{ .Release.Name }}, app.kubernetes.io/part-of: viewsense, viewsense.io/plane: registry-data}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {fsGroup: 999, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: postgres
+          image: {{ .Values.datastores.registry.image }}
+          imagePullPolicy: IfNotPresent
+          ports: [{name: postgres, containerPort: 5432}]
+          env:
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+            - {name: POSTGRES_DB, value: viewsense_registry}
+            - {name: POSTGRES_USER, value: viewsense_registry}
+            - {name: POSTGRES_PASSWORD, valueFrom: {secretKeyRef: {name: {{ .Values.datastores.registry.credentialsSecret }}, key: password}}}
+          readinessProbe: {exec: {command: [pg_isready, -U, viewsense_registry, -d, viewsense_registry]}, initialDelaySeconds: 3, periodSeconds: 3}
+          livenessProbe: {exec: {command: [pg_isready, -U, viewsense_registry, -d, viewsense_registry]}, initialDelaySeconds: 15, periodSeconds: 10}
+          resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {cpu: "1", memory: 1Gi}}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}, runAsNonRoot: true, runAsUser: 999}
+          volumeMounts: [{name: data, mountPath: /var/lib/postgresql/data}]
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: {{ .Values.datastores.registry.storage }}}}}
+{{- end }}

@@ -1,44 +1,33 @@
-# Design 10.1 - Objective and Principles
-
-## Purpose
-
-Defines the architectural intent and non-negotiable principles for LatticeCore® Platform.
-
-## Concept Alignment
-
-Canonical flow: `Enterprise User or App -> API Gateway and Auth -> Fabric Layer`.
-
-Fabric Layer services: AI Orchestrator, Workflow Engine, LLM Gateway and Inference, Memory and RAG, MCP Runtime.
-
-Security and Zero Trust plus Observability are mandatory cross-cutting controls across all Fabric services.
+# ViewSense Objective and Principles
 
 ## Objective
 
-Build a production-grade, plug-and-play, infrastructure-agnostic enterprise AI platform on Kubernetes that can be deployed across EKS, GKE, AKS, and bare metal, while remaining secure, replaceable, and operations-ready.
+Provide enterprises with a portable control layer for AI workloads that can operate disconnected, in a private data centre, in public cloud, or across approved combinations. An application should continue to use the same ViewSense API when an enterprise changes its model runtime, memory product, vector database, workflow engine, or MCP implementation.
 
-## Core Principles
+## Non-negotiable principles
 
-- Component decoupling and replaceability by design.
-- REST API-first integration contracts.
-- Zero-trust and least-privilege security across all planes.
-- Multi-tenant isolation with policy-driven control.
-- SRE-grade observability and auditable operations.
+- **API first:** a capability is usable only through a versioned, documented contract. API first includes HTTP/JSON, SSE, MCP Streamable HTTP, and CloudEvents; it does not mean REST is forced onto streaming or event use cases.
+- **Replace through contracts:** callers depend on capability contracts, never vendor SDKs. Adapters absorb vendor authentication, schemas, errors, and feature discovery.
+- **Zero implicit trust:** network location does not grant access. Transport identity and application authorization are both required on every hop.
+- **One owner per datum:** a service can own a schema/database, but cannot expose it to peers. Replication and analytics use explicit events or export APIs.
+- **Tenant is derived identity:** external tenant headers are ignored. The edge derives tenant context from a verified identity and delegates it only to authorized workloads.
+- **Policy before execution:** model selection, memory access, and tool use are policy decisions made before provider calls and recorded for audit.
+- **Portable core, optional accelerators:** baseline installation uses standard Kubernetes APIs. Cloud-specific identity, GPU, storage, or ingress features are overlays.
+- **Fail closed:** unknown providers, missing tenant context, expired identity, unavailable policy, and disallowed egress deny the operation.
 
-## Non-Functional Targets
+## Target outcomes
 
-- Availability:
-  - control plane target: 99.9%+
-  - inference target: 99.5%+ (tier-dependent)
-- Latency:
-  - p95 aligned to workload token budget and context size.
-- Compliance:
-  - immutable delivery history and policy-as-code enforcement.
-- Portability:
-  - cloud/provider independence through abstraction layers.
+- provider change without application change;
+- no provider credential available to clients or the orchestrator;
+- local inference and cloud inference selectable by tenant/data policy;
+- memory export/import with a canonical envelope;
+- independently scalable stateless gateways and provider runtimes;
+- reproducible namespace-level installation, upgrade, rollback, backup, and removal.
 
-## Mandatory Enterprise Requirements
+## Explicit non-goals for the initial foundation
 
-- SSO federation with enterprise IdP providers (for example Entra ID/Azure AD, ADFS, Okta) using OIDC/OAuth2/SAML patterns.
-- RBAC and ABAC policy enforcement across infrastructure, platform APIs, workflows, and tool access.
-- Full observability telemetry (metrics, logs, traces) for every service and integration.
-- No hard dependency on a single product without a swappable abstraction contract.
+- training or fine-tuning models;
+- inventing a proprietary model protocol when an OpenAI-compatible surface is sufficient;
+- treating a vector index as authoritative business storage;
+- executing unreviewed MCP servers in the control plane;
+- claiming production compliance from development certificates or mock adapters.

@@ -1,43 +1,35 @@
-# Design 10.5 - Operations Baseline and Roadmap
+# ViewSense Operations Baseline
 
-## Concept Alignment
+## Release unit
 
-Operations and roadmap planning assume the canonical flow `Enterprise User or App -> API Gateway and Auth -> Fabric Layer`, with Security and Zero Trust plus Observability applied across all Fabric services.
+Each service and adapter is independently versioned and deployable. A release records image digest, SBOM, signature, API-contract version, database migration, configuration schema, and rollback compatibility. Production promotion is GitOps-only.
 
-## Day-2 Operations Baseline
+## Required operational controls
 
-- Security:
-  - SSO, RBAC, ABAC, zero-trust enforcement.
-- Observability:
-  - Prometheus, Grafana, logs, OpenTelemetry traces.
-- Reliability:
-  - SLOs, HA policies, failover runbooks, DR testing.
+- startup, readiness, and liveness behavior appropriate to dependencies;
+- graceful termination and bounded connection draining;
+- resource requests/limits and disruption budgets;
+- horizontal scaling for stateless gateways;
+- migration jobs that are backward compatible during rollout;
+- telemetry for request rate, error rate, latency, saturation, token use, retrieval behavior, and tool calls;
+- tested backup/restore for each state owner;
+- provider health that cannot leak secrets or make the whole control plane depend on one vendor.
 
-## Reference Deployment Domains
+## Configuration
 
-- ai-edge
-- ai-control-plane
-- ai-inference
-- ai-memory
-- ai-workflows
-- ai-observability
-- ai-security
+Routing, provider catalogs, model aliases, tenant policy, and feature flags are configuration resources with schema validation and audit history. Secrets contain only credentials/keys and come from an external secret manager in production. Environment variables are acceptable for the development reference but are not the desired dynamic control plane.
 
-## Repository Alignment Guidance
+## Initial SLO classes
 
-Current structure is valid and extensible.
+| Class | Availability target | Primary latency indicator |
+|---|---:|---|
+| edge/control API | 99.9% | p95 non-provider overhead |
+| memory retrieval | 99.9% | p95 query latency by collection size |
+| model route | provider-tier dependent | time to first token and completion |
+| MCP invocation | tool-tier dependent | completion/timeout ratio |
 
-Recommended additions for maturity:
+End-to-end SLOs must not hide provider performance. Each hop reports its own budget and dependency contribution.
 
-- platform or infra for GitOps overlays and environment manifests.
-- fabric/observability for dashboards and telemetry collectors.
-- fabric/security for policy bundles and RBAC templates.
-- runbooks for operational procedures.
+## Reference test gates
 
-## Condensed Implementation Roadmap
-
-1. Foundation: GitOps, ingress, identity, and baseline security.
-2. Inference and gateway: model serving, autoscaling, API compatibility.
-3. Memory and retrieval: vector, metadata, ingestion, and context APIs.
-4. MCP and workflows: tool runtime, connectors, orchestration loops.
-5. Day-2 maturity: SLOs, DR drills, security hardening, compliance evidence.
+The repository requires static checks, unit security/embedding tests, rendered Kubernetes validation, and an end-to-end smoke job that verifies denial without a token, a full model request, persisted memory retrieval, MCP registration, and an authorized MCP call.

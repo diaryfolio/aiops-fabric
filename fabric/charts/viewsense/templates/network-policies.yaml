@@ -1,0 +1,135 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: viewsense-default-deny
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: viewsense
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: viewsense-dns
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: viewsense
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.dnsNamespace | quote }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.networkPolicy.dnsPodLabels | nindent 14 }}
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+{{- range $name, $module := .Values.modules }}
+{{- if eq (include "viewsense.moduleEnabled" (list $name $module $)) "true" }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $name }}-flows
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name | quote }}
+      app.kubernetes.io/instance: {{ $.Release.Name | quote }}
+  policyTypes:
+    - Ingress
+    - Egress
+  {{- if $module.ingressFrom }}
+  ingress:
+    - from:
+        {{- range $source := $module.ingressFrom }}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ $source | quote }}
+              app.kubernetes.io/instance: {{ $.Release.Name | quote }}
+        {{- end }}
+      ports:
+        - {protocol: TCP, port: 8443}
+  {{- else }}
+  ingress: []
+  {{- end }}
+  {{- if $module.egressTo }}
+  egress:
+    {{- range $destination := $module.egressTo }}
+    {{- if eq (include "viewsense.destinationEnabled" (list $destination $)) "true" }}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ $destination | quote }}
+              app.kubernetes.io/instance: {{ $.Release.Name | quote }}
+      ports:
+        - protocol: TCP
+          port: {{ if or (eq $destination "memory-db") (eq $destination "registry-db") }}5432{{ else }}8443{{ end }}
+    {{- end }}
+    {{- end }}
+    {{- if and (eq $name "llm-gateway") (ne $.Values.products.llm.product "mock-openai-compatible") }}
+    {{- range $rule := $.Values.products.llm.externalEgress }}
+    - to: [{ipBlock: {cidr: {{ $rule.cidr | quote }}}}]
+      ports: [{protocol: TCP, port: {{ $rule.port }}}]
+    {{- end }}
+    {{- end }}
+    {{- if and (eq $name "memory-gateway") (ne $.Values.products.memory.product "postgres-pgvector") }}
+    {{- range $rule := $.Values.products.memory.externalEgress }}
+    - to: [{ipBlock: {cidr: {{ $rule.cidr | quote }}}}]
+      ports: [{protocol: TCP, port: {{ $rule.port }}}]
+    {{- end }}
+    {{- end }}
+  {{- else }}
+  egress: []
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- if eq .Values.products.memory.product "postgres-pgvector" }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: memory-db-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: memory-db
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: memory-postgres
+              app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      ports: [{protocol: TCP, port: 5432}]
+{{- end }}
+{{- if (index .Values.modules "mcp-gateway").enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: registry-db-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: registry-db
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: mcp-gateway
+              app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      ports: [{protocol: TCP, port: 5432}]
+{{- end }}
+{{- end }}

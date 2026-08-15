@@ -1,0 +1,232 @@
+name: viewsense-dev
+
+x-app: &app
+  image: viewsense-core:dev
+  build:
+    context: .
+    target: runtime
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp:size=32m,mode=1777
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  environment: &common-env
+    VS_PORT: "8443"
+    VS_IDENTITY_URL: https://identity:8443
+    VS_IDENTITY_ISSUER: https://identity:8443
+    VS_IDENTITY_PUBLIC_KEY_FILE: /run/viewsense/identity/signing.pub
+    VS_TLS_CA_FILE: /run/viewsense/tls/ca.crt
+    VS_TLS_CERT_FILE: /run/viewsense/tls/tls.crt
+    VS_TLS_KEY_FILE: /run/viewsense/tls/tls.key
+  volumes:
+    - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+
+x-service-volumes: &service-volumes
+  - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+
+services:
+  identity:
+    <<: *app
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_identity.app
+      VS_IDENTITY_PRIVATE_KEY_FILE: /run/viewsense/identity/signing.key
+      VS_IDENTITY_CLIENTS_FILE: /run/viewsense/identity/clients.json
+    volumes:
+      - ./.viewsense/pki/identity:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.key:/run/viewsense/identity/signing.key:ro
+      - ./.viewsense/clients.json:/run/viewsense/identity/clients.json:ro
+    ports:
+      - "127.0.0.1:9444:8443"
+    networks: [edge, control]
+
+  gateway:
+    <<: *app
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_gateway.app
+      VS_CLIENT_ID: gateway
+      VS_CLIENT_SECRET: ${VS_GATEWAY_CLIENT_SECRET:?run scripts/bootstrap-dev-pki.sh}
+      VS_ORCHESTRATOR_URL: https://orchestrator:8443
+    volumes:
+      - ./.viewsense/pki/gateway:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    ports:
+      - "127.0.0.1:9443:8443"
+    networks: [edge, control]
+
+  orchestrator:
+    <<: *app
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_orchestrator.app
+      VS_CLIENT_ID: orchestrator
+      VS_CLIENT_SECRET: ${VS_ORCHESTRATOR_CLIENT_SECRET:?run scripts/bootstrap-dev-pki.sh}
+      VS_MEMORY_URL: https://memory-gateway:8443
+      VS_LLM_URL: https://llm-gateway:8443
+    volumes:
+      - ./.viewsense/pki/orchestrator:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    networks: [control]
+
+  ingestion:
+    <<: *app
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_ingestion.app
+      VS_CLIENT_ID: ingestion
+      VS_CLIENT_SECRET: ${VS_INGESTION_CLIENT_SECRET:?run scripts/bootstrap-dev-pki.sh}
+      VS_MEMORY_URL: https://memory-gateway:8443
+    volumes:
+      - ./.viewsense/pki/ingestion:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    networks: [control]
+
+  llm-gateway:
+    <<: *app
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_llm_gateway.app
+      VS_CLIENT_ID: llm-gateway
+      VS_CLIENT_SECRET: ${VS_LLM_GATEWAY_CLIENT_SECRET:?run scripts/bootstrap-dev-pki.sh}
+      VS_LLM_PROVIDER_URL: https://mock-llm:8443
+      VS_LLM_PROVIDER_AUDIENCE: mock-llm
+    volumes:
+      - ./.viewsense/pki/llm-gateway:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    networks: [control, llm-provider]
+
+  mock-llm:
+    <<: *app
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_mock_llm.app
+    volumes:
+      - ./.viewsense/pki/mock-llm:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    networks: [llm-provider]
+
+  memory-gateway:
+    <<: *app
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_memory_gateway.app
+      VS_CLIENT_ID: memory-gateway
+      VS_CLIENT_SECRET: ${VS_MEMORY_GATEWAY_CLIENT_SECRET:?run scripts/bootstrap-dev-pki.sh}
+      VS_MEMORY_PROVIDER_URL: https://memory-postgres:8443
+      VS_MEMORY_PROVIDER_AUDIENCE: memory-postgres
+    volumes:
+      - ./.viewsense/pki/memory-gateway:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    networks: [control, memory-provider]
+
+  memory-postgres:
+    <<: *app
+    depends_on:
+      memory-db:
+        condition: service_healthy
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_memory_postgres.app
+      VS_DATABASE_URL: postgresql://viewsense_memory:${VS_MEMORY_DB_PASSWORD:?run scripts/bootstrap-dev-pki.sh}@memory-db:5432/viewsense_memory
+    volumes:
+      - ./.viewsense/pki/memory-postgres:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    networks: [memory-provider]
+
+  memory-db:
+    image: pgvector/pgvector:pg16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: viewsense_memory
+      POSTGRES_USER: viewsense_memory
+      POSTGRES_PASSWORD: ${VS_MEMORY_DB_PASSWORD:?run scripts/bootstrap-dev-pki.sh}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U viewsense_memory -d viewsense_memory"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    volumes:
+      - memory-data:/var/lib/postgresql/data
+    networks: [memory-provider]
+
+  mcp-gateway:
+    <<: *app
+    depends_on:
+      registry-db:
+        condition: service_healthy
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_mcp_gateway.app
+      VS_CLIENT_ID: mcp-gateway
+      VS_CLIENT_SECRET: ${VS_MCP_GATEWAY_CLIENT_SECRET:?run scripts/bootstrap-dev-pki.sh}
+      VS_DATABASE_URL: postgresql://viewsense_registry:${VS_REGISTRY_DB_PASSWORD:?run scripts/bootstrap-dev-pki.sh}@registry-db:5432/viewsense_registry
+      VS_MCP_ALLOWED_HOSTS: mock-mcp
+    volumes:
+      - ./.viewsense/pki/mcp-gateway:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    networks: [control, mcp-provider, registry-data]
+
+  mock-mcp:
+    <<: *app
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_mock_mcp.app
+    volumes:
+      - ./.viewsense/pki/mock-mcp:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    networks: [mcp-provider]
+
+  registry-db:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: viewsense_registry
+      POSTGRES_USER: viewsense_registry
+      POSTGRES_PASSWORD: ${VS_REGISTRY_DB_PASSWORD:?run scripts/bootstrap-dev-pki.sh}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U viewsense_registry -d viewsense_registry"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    volumes:
+      - registry-data:/var/lib/postgresql/data
+    networks: [registry-data]
+
+  smoke:
+    <<: *app
+    profiles: [test]
+    restart: "no"
+    entrypoint: ["python", "-m", "viewsense_smoke.main"]
+    environment:
+      <<: *common-env
+      VS_CLIENT_ID: smoke
+      VS_CLIENT_SECRET: ${VS_SMOKE_CLIENT_SECRET:?run scripts/bootstrap-dev-pki.sh}
+      VS_GATEWAY_URL: https://gateway:8443
+      VS_INGESTION_URL: https://ingestion:8443
+      VS_MEMORY_URL: https://memory-gateway:8443
+      VS_MCP_URL: https://mcp-gateway:8443
+    volumes:
+      - ./.viewsense/pki/smoke:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    networks: [control]
+
+networks:
+  edge: {}
+  control:
+    internal: true
+  llm-provider:
+    internal: true
+  memory-provider:
+    internal: true
+  mcp-provider:
+    internal: true
+  registry-data:
+    internal: true
+
+volumes:
+  memory-data: {}
+  registry-data: {}

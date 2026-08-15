@@ -1,51 +1,61 @@
-# aiops-fabric
+# ViewSense
 
-Business Brand: LatticeCore® Platform
+ViewSense is a portable, enterprise-controlled AI backbone. It gives applications one governed API while allowing LLM runtimes, memory products, vector stores, workflow engines, and MCP servers to run locally or in approved clouds and to be replaced independently.
 
-## Overview
+This repository contains the architecture and an executable Kubernetes reference slice. The reference proves the main boundaries without requiring a GPU or external AI account:
 
-This repository is the architecture and platform-organization workspace for LatticeCore® Platform. It keeps enterprise AI design, governance guidance, and platform domain scaffolding in one place so design and implementation remain aligned as the platform evolves.
+- edge API and request orchestrator;
+- OpenAI-compatible LLM gateway with a deterministic mock provider;
+- vendor-neutral memory gateway with a PostgreSQL/pgvector provider;
+- MCP registry and invocation gateway with a test provider;
+- short-lived, audience-bound workload tokens plus mutual TLS on every API hop;
+- deny-by-default Kubernetes network policies and separate data stores.
 
-## High-Level Concept
+The mock LLM and deterministic embedding are test adapters, not production AI models. Replace them with vLLM, OpenAI, Azure OpenAI, Mem0, or another contract-conforming provider without changing callers.
+
+## Architecture
 
 ```mermaid
 flowchart LR
-	U[Enterprise User or App] --> G[API Gateway and Auth]
-	G --> F
-
-	subgraph F[Fabric Layer]
-		O[AI Orchestrator]
-		W[Workflow Engine]
-		L[LLM Gateway and Inference]
-		M[Memory and RAG]
-		X[MCP Runtime]
-	end
-
-	O --> W
-	O --> L
-	O --> M
-	W --> X
-	X --> E[Enterprise Systems and APIs]
-
-	SEC[Security and Zero Trust] -.-> O
-	SEC -.-> W
-	SEC -.-> L
-	SEC -.-> M
-	SEC -.-> X
-
-	OBS[Observability] -.-> O
-	OBS -.-> W
-	OBS -.-> L
-	OBS -.-> M
-	OBS -.-> X
+    C["Enterprise client"] -->|"mTLS + tenant token"| G["Edge API"]
+    G -->|"aud: orchestrator"| O["Orchestrator"]
+    O -->|"memory API"| MG["Memory gateway"]
+    O -->|"OpenAI-compatible API"| LG["LLM gateway"]
+    O -->|"MCP invocation API"| XG["MCP gateway"]
+    MG --> MP["Memory provider adapter"]
+    LG --> LP["Local or cloud LLM adapter"]
+    XG --> XP["Isolated MCP server"]
+    MP --> PGV[("PostgreSQL + pgvector")]
+    XG --> PGR[("Registry PostgreSQL")]
+    I["Enterprise IdP / workload issuer"] -.-> G & O & MG & LG & XG & MP & LP & XP
 ```
 
-Detailed design hierarchy is documented in [docs/design/high-level/design_01.md](docs/design/high-level/design_01.md).
+Every arrow is a versioned API contract. No service reads another service's database. Provider-specific behavior remains behind adapters.
 
-## Top-Level Directories
+## Run locally with Kubernetes
 
-| Directory | Purpose |
-|---|---|
-| [docs](docs) | Architecture, design, and governance documentation (including high-level system design and prompt guardrails). |
-| [fabric](fabric) | Core platform domains and implementation scaffolding for deployable AI platform components. |
+Prerequisites: Docker, `kubectl`, `k3d`, and a current Kubernetes context that points to the intended development cluster.
 
+```bash
+make unit
+make lint
+make k8s-deploy
+make k8s-test
+```
+
+The deployment script builds `viewsense-core:dev`, imports it into k3d, creates short-lived development credentials, and applies resources only to `viewsense-dev`. Generated keys and credentials live under `.viewsense/` and are ignored by Git.
+
+Docker Compose is retained as a quick developer harness:
+
+```bash
+make compose-up
+make compose-test
+```
+
+## Important production boundary
+
+The in-repository identity issuer, static development CA, mock LLM, mock MCP server, and deterministic embeddings exist to make contracts testable. Production installations must integrate enterprise OIDC, automated workload identity/certificate issuance (for example SPIFFE/SPIRE or a service mesh), an external secrets manager, a real embedding service, and production-grade model/MCP providers.
+
+Start with [the architecture index](docs/design/high-level/design_01.md) and [the deployment design](docs/design/high-level/20-deployment/01-deployment-topology-sizing.md).
+
+All contributors and coding agents must follow the design-sync rules in [CLAUDE.md](CLAUDE.md).

@@ -1,155 +1,54 @@
-# LatticeCore® Platform on Kubernetes - Technical System Design 05
+# ViewSense Delivery Roadmap and Maturity
 
-## 1. Implementation Roadmap
+## Delivery strategy
 
-This document provides a phased delivery plan from platform bootstrap to enterprise-scale operations.
+Build thin end-to-end slices and prove replaceability/security with tests before adding providers. Dates depend on enterprise controls and provider choices; exit criteria, not elapsed weeks, determine readiness.
 
-## 1.1 Concept Alignment
+## Phase 0 — executable contract foundation (current)
 
-Roadmap phases are planned around the canonical architecture flow `Enterprise User or App -> API Gateway and Auth -> Fabric Layer`.
+Deliver edge, orchestrator, LLM/memory/MCP gateways, mock providers, PostgreSQL/pgvector memory, development workload identity, Kubernetes packaging, network policy, and smoke tests.
 
-Each phase must preserve this model and enforce cross-cutting Security and Zero Trust plus Observability across all Fabric services.
+Exit: a clean cluster can deploy into an isolated namespace; missing authorization is denied; model, persisted memory, and MCP paths pass end to end.
 
-## 2. Phase Plan
+## Phase 1 — production identity and operations
 
-## Phase 0 - Platform Bootstrap (Weeks 0-4)
+Integrate enterprise OIDC, SPIFFE/mesh mTLS, external secrets, OPA-style policy decisions, OpenTelemetry, standardized errors/idempotency/deadlines, signed builds/SBOMs, GitOps overlays, PDB/HPA, and HA data services.
 
-Goals:
+Exit: identity/key rotation, negative security tests, telemetry continuity, backup/restore, rolling upgrade, and rollback pass in staging.
 
-- establish GitOps foundation
-- deploy ingress, identity, and baseline policies
-- set up observability control plane
+## Phase 2 — real replaceable providers
 
-Deliverables:
+Add and certify at least two LLM routes (one local, one cloud or second local), a real embedding provider, Mem0 or another memory adapter, memory export/import, and isolated MCP server lifecycle.
 
-- Argo CD or Flux bootstrapped
-- OIDC integration complete
-- service mesh installed with mTLS
-- baseline dashboards and alerts
+Exit: the same consumer conformance suite passes against each provider; a policy-only route/provider swap needs no caller deployment and preserves tenant/residency guarantees.
 
-Exit criteria:
+## Phase 3 — durable agents, workflows, and governance
 
-- reproducible deployment in dev and staging
-- policy checks block non-compliant manifests
+Add the agent-runtime contract, durable run checkpoints, workflow-provider contract, n8n/Temporal/LangGraph adapters as selected, resumable ingestion jobs, human approvals, provider catalog lifecycle, evaluation service, prompt/config versioning, data retention/legal hold, chargeback, and an admin API/UI.
 
-## Phase 1 - Core AI Runtime (Weeks 4-8)
+Exit: replay-safe workflows, bounded tool loops, audited approvals, and tenant onboarding/offboarding drills pass.
 
-Goals:
+## Phase 4 — scale and regulated cells
 
-- operational LLM serving and OpenAI-compatible APIs
-- first memory retrieval path and ingestion pipeline
+Add multi-cluster routing, GPU fleet integration/autoscaling, regulated tenant cells, DR/failover automation, performance/cost optimization, and continuous red-team/evaluation gates.
 
-Deliverables:
+Exit: stated SLO/RPO/RTO and isolation targets pass load, chaos, restore, failover, and security exercises.
 
-- vLLM runtime with autoscaling
-- model gateway and routing policy engine
-- vector DB + metadata store + basic RAG service
+## Maturity levels
 
-Exit criteria:
+| Level | Evidence |
+|---|---|
+| executable | one reference path and automated negative/positive tests |
+| replaceable | two implementations pass the same contract suite |
+| operable | SLOs, telemetry, upgrade/rollback, backup/restore, on-call |
+| governed | policy/audit/data lifecycle and certified provider catalog |
+| resilient | HA, failure isolation, DR and multi-cluster exercises |
 
-- latency and availability SLOs met for pilot workloads
-- ingestion and retrieval tested under concurrency
+## Principal risks
 
-## Phase 2 - MCP and Workflow Orchestration (Weeks 8-12)
-
-Goals:
-
-- production MCP runtime and connector lifecycle
-- workflow orchestration for agent loops and business automations
-
-Deliverables:
-
-- MCP registry and connector deployment templates
-- n8n or Tines integration with orchestrator
-- queue bus and DLQ patterns activated
-
-Exit criteria:
-
-- certified MCP connectors for priority systems
-- policy-enforced tool invocation operating in staging
-
-## Phase 3 - Enterprise Hardening (Weeks 12-16)
-
-Goals:
-
-- security/compliance readiness
-- resilient HA and DR posture
-
-Deliverables:
-
-- signed image enforcement and SBOM pipeline
-- backup/restore and failover runbooks validated
-- audit log and evidence collection workflows
-
-Exit criteria:
-
-- successful DR simulation
-- completed security attestation checklist
-
-## Phase 4 - Scale and Optimization (Weeks 16+)
-
-Goals:
-
-- optimize cost/performance
-- increase tenant onboarding velocity
-
-Deliverables:
-
-- model routing optimization policies
-- chargeback/showback reporting
-- self-service tenant onboarding templates
-
-Exit criteria:
-
-- stable error budget burn rates
-- target cost per 1M tokens achieved
-
-## 3. Platform Maturity Model
-
-Level 1 - Foundational:
-
-- single environment, manual controls reduced but present
-
-Level 2 - Managed:
-
-- multi-env GitOps, baseline security and observability standardized
-
-Level 3 - Governed:
-
-- policy-as-code everywhere, certified MCP catalog, formal SLO program
-
-Level 4 - Optimized:
-
-- predictive autoscaling, automated cost controls, continuous quality evaluation
-
-## 4. Delivery Governance
-
-- Architecture review board validates major runtime and data-plane changes.
-- Security review required for new MCP connector classes.
-- SRE sign-off required before production promotion for critical services.
-- Monthly roadmap review against KPI/SLO outcomes.
-
-## 5. KPI Framework
-
-- Reliability KPIs:
-  - availability by service tier
-  - p95 latency by model class
-- Quality KPIs:
-  - retrieval relevance proxies
-  - task success ratio for workflow executions
-- Cost KPIs:
-  - cost per 1M tokens
-  - GPU utilization efficiency
-- Delivery KPIs:
-  - lead time for change
-  - change failure rate
-
-## 6. Risk Register (Initial)
-
-1. GPU supply and capacity fragmentation.
-2. Tenant data isolation misconfiguration risk.
-3. MCP connector sprawl without certification governance.
-4. Cost escalation from unconstrained agent loops.
-5. Observability blind spots in cross-service streaming paths.
-
-Mitigation is tracked through architecture and SRE review checkpoints per phase.
+1. Treating OpenAI-compatible syntax as full semantic compatibility; mitigate with capability descriptors and conformance/evaluation tests.
+2. Memory-provider lock-in through opaque embeddings/metadata; mitigate with canonical export and re-embedding plans.
+3. Prompt injection causing tool actions; mitigate with independent deterministic tool authorization and approval.
+4. Static development security being promoted; block production overlays that reference the dev issuer/CA/mocks.
+5. Kubernetes NetworkPolicy support varying by CNI; verify enforcement, do not infer it from accepted YAML.
+6. Unbounded provider fallback violating residency; route only among policy-equivalent providers.

@@ -1,158 +1,55 @@
-# LatticeCore® Platform on Kubernetes - Technical System Design 03
+# ViewSense Zero-Trust Security Model
 
-## 1. Security and Governance Architecture
+## Security objective
 
-This document defines the enterprise security posture for the platform, including identity, data isolation, policy enforcement, supply-chain controls, and auditability.
+Compromise of one component must not grant implicit access to another component, another tenant, provider credentials, or a different data plane. Controls are layered: network reachability, workload TLS identity, audience/scoped authorization, tenant/data policy, provider egress policy, and audit.
 
-### Concept Alignment
+## Trust boundaries and controls
 
-Security controls in this document apply to the canonical flow `Enterprise User or App -> API Gateway and Auth -> Fabric Layer` and all Fabric services (AI Orchestrator, Workflow Engine, LLM Gateway and Inference, Memory and RAG, MCP Runtime).
+| Boundary | Authentication | Authorization | Containment |
+|---|---|---|---|
+| client → edge | enterprise OIDC and optional client mTLS | tenant/user RBAC, ABAC, quota | ingress/WAF and no direct internal exposure |
+| edge → orchestrator | workload mTLS + audience token | `orchestrate.invoke` | explicit NetworkPolicy |
+| orchestrator → gateway | workload mTLS + audience token | capability-specific scope | no provider credential in orchestrator |
+| gateway → provider | workload mTLS + provider audience | `provider.invoke`, provider policy | dedicated provider network/namespace |
+| provider → database | database identity and TLS | owner schema/user only | only owning provider can reach store |
+| MCP → enterprise system | connector workload identity | per-tool/action/data policy | egress allow-list and isolated credentials |
 
-### Security Mandate
+## Identity
 
-- Zero-trust is mandatory and non-optional across all platform layers.
-- Every request must be explicitly authenticated, authorized, encrypted, and continuously evaluated regardless of source network.
-- Security controls must align with current enterprise best practices and be periodically uplifted as standards evolve.
+Human identity federates to the enterprise IdP using OIDC Authorization Code + PKCE or workload-appropriate OAuth flows. Workloads receive renewable, short-lived identities through SPIFFE/SPIRE, service mesh, or cloud workload identity. Application tokens have exact `aud`, narrow scopes, expiry, unique ID, and issuer. Shared bearer tokens, namespace trust, and long-lived API keys are prohibited.
 
-## 2. Trust Boundaries
+The development issuer uses client credentials and RS256 plus a generated CA to make these properties testable. It is not an enterprise IdP and must not be promoted.
 
-- Boundary A: External client to ingress/API gateway.
-- Boundary B: Gateway to internal control services.
-- Boundary C: Control services to inference/memory/workflow services.
-- Boundary D: MCP runtime to enterprise systems.
-- Boundary E: Platform services to data stores and backups.
+## Tenant and authorization
 
-All boundaries enforce encryption in transit and policy checks.
+The edge derives tenant from verified claims. Internal `X-ViewSense-Tenant` is delegation metadata accepted only with an authorized caller token; external caller headers cannot select a tenant. Data queries include tenant and owner/purpose predicates. Production adds policy decisions for classification, legal basis, retention, model class, connector action, and residency both before retrieval and after candidate retrieval.
 
-## 3. Identity and Access Model
+## MCP threat model
 
-### 3.1 Human Identity
+MCP servers and returned content are untrusted. Controls include exact HTTPS host allow-lists, signed/approved server descriptors, schema validation, bounded payload/time, side-effect classification, human approval for consequential actions, response content isolation, SSRF/DNS rebinding protection, separate credentials, and immutable invocation audit. A catalog record is not execution approval.
 
-- OIDC federation with enterprise IdP.
-- Supported enterprise SSO providers include Microsoft Entra ID (Azure AD), Active Directory Federation Services, Okta, and equivalent standards-compliant IdPs.
-- Group/role claims mapped to platform RBAC roles.
-- Mandatory MFA and conditional access policies at IdP layer.
+## AI-specific threats
 
-### 3.2 Workload Identity
+- Prompt injection: retrieved/tool content is marked as data, tools are authorized independently of model output, and high-risk actions require deterministic policy or approval.
+- Data exfiltration: outbound providers are chosen by data policy; payload logging is off by default; egress is deny-by-default.
+- Cross-tenant retrieval: tenant predicates, provider-level isolation, negative tests, and post-retrieval policy filters.
+- Cost/resource exhaustion: input/output/tool-loop limits, quotas, deadlines, concurrency controls, and cancellation.
+- Model/provider substitution: signed configuration, capability/residency validation, immutable image digests, and audited route decisions.
 
-- SPIFFE/SPIRE or cloud-native workload identity.
-- Service accounts are namespace-scoped with minimum permissions.
-- No shared service accounts across trust domains.
+## Secrets and cryptography
 
-### 3.3 Authorization Layers
+Production secrets originate in Vault or a cloud secret manager, arrive through workload identity, rotate automatically, and are never present in Git or images. Certificates are short-lived and automatically renewed. Databases, backups, and object storage use enterprise-managed encryption keys. Algorithms and issuers are configuration with a tested rotation/overlap procedure.
 
-- Kubernetes RBAC for infrastructure actions.
-- Application RBAC for tenant resources.
-- ABAC for data classification, connector sensitivity, and model access classes.
+## Supply chain
 
-## 4. Multi-Tenant Data Isolation
+CI generates SBOMs, scans dependencies/images/IaC, signs artifacts and provenance, and admits only trusted digests. Pods use restricted security contexts. Provider and MCP adapter additions require threat modeling, conformance tests, and review of their network and secret permissions.
 
-- Tenant ID carried as mandatory first-class attribute in:
-  - request context
-  - trace context
-  - storage keys and partition paths
-- Data plane isolation controls:
-  - namespace isolation
-  - network policy deny-by-default
-  - separate encryption keys per tenant class
+## Required negative tests
 
-For high-risk tenants, use dedicated cluster and dedicated key hierarchy.
-
-## 5. Secret and Key Management
-
-- Vault or cloud-native secret manager as source of truth.
-- External Secrets Operator for sync into Kubernetes secrets where needed.
-- Dynamic, short-lived credentials for databases and MCP connectors.
-- Key rotation policy by class:
-  - high sensitivity: 30 days
-  - standard: 90 days
-
-No static secrets in images, manifests, or workflow definitions.
-
-## 6. Network Security
-
-- Service mesh mTLS in STRICT mode.
-- AuthorizationPolicy per service with explicit principal allow-list.
-- Egress controls:
-  - default blocked egress
-  - explicit allow-list for approved SaaS and enterprise APIs
-- Web application firewall and bot control at edge ingress.
-
-## 6.2 Zero-Trust Control Requirements
-
-- Identity-aware proxy and policy enforcement point at ingress and service-to-service boundaries.
-- Continuous verification of workload identity (SPIFFE/SPIRE or equivalent) for east-west traffic.
-- Least-privilege authorization with deny-by-default policy posture.
-- Device/user/session risk signals from enterprise IdP must be enforceable at API gateway policy layer.
-- Just-in-time privileged access for operational actions, with full audit and expiry.
-- Cryptographic agility plan for key rotation, algorithm updates, and certificate lifecycle automation.
-
-## 6.1 REST API Security and Governance
-
-- REST API-first is the default integration standard for platform and connector interfaces.
-- Every REST API must enforce OAuth2/OIDC-based authentication and RBAC authorization decisions.
-- API contracts must be versioned and documented with OpenAPI.
-- API gateway policy must enforce rate limiting, request validation, and audit tagging for all external and partner integrations.
-
-## 7. Supply Chain Security
-
-- Build pipeline produces SBOM for all images.
-- Artifact signing (Cosign) with signature verification at admission.
-- Continuous vulnerability scanning with severity gates.
-- Policy blocks:
-  - unsigned image
-  - stale critical CVE above policy window
-  - disallowed base images
-
-## 8. MCP Connector Security Standard
-
-Every hosted MCP server must satisfy:
-
-1. Contract declaration (input schema, output schema, side effects).
-2. Least-privilege credential scopes.
-3. Rate limits and timeout policies.
-4. Full request/response audit metadata (excluding sensitive payload where prohibited).
-5. Security test suite (auth bypass, injection, SSRF, data overexposure).
-
-## 9. Data Governance for RAG and Memory
-
-- Classification tags required for all ingested corpora.
-- Retrieval policy enforces clearance checks before vector query and after candidate retrieval.
-- Retention and legal hold policy integrated with metadata store.
-- PII controls:
-  - tokenization/masking on ingestion where required
-  - retrieval-time redaction policy options
-
-## 10. Audit and Compliance Evidence
-
-- Immutable audit logs for:
-  - model invocation metadata
-  - MCP tool calls
-  - policy decisions (allow/deny)
-  - admin configuration changes
-- Time-synchronized events via centralized clock source.
-- Quarterly access review and policy attestation workflows.
-
-## 11. Security Operations Model
-
-- Real-time detections:
-  - abnormal token consumption
-  - unusual connector access patterns
-  - repeated authorization denials
-- Incident response playbooks:
-  - credential compromise
-  - tenant data boundary violation
-  - malicious prompt/tool abuse
-- Break-glass access:
-  - audited, time-limited, approval-gated
-
-## 12. Minimum Security Baseline Checklist
-
-- mTLS enabled cluster-wide.
-- OIDC and RBAC integrated and tested.
-- Secrets rotation enabled.
-- Signed images enforced.
-- Namespace network default deny enabled.
-- MCP connector certification gate enabled.
-- Audit pipeline validated end-to-end.
-- Zero-trust policy enforcement validated for north-south and east-west traffic.
+- missing/expired token, wrong audience, wrong scope, and untrusted client certificate;
+- caller-supplied tenant substitution and cross-tenant memory search;
+- disallowed MCP URL, DNS/IP/redirect SSRF cases, and undeclared tool;
+- direct orchestrator-to-provider/database network attempts;
+- provider credential absence in callers;
+- policy/identity unavailability fails closed for protected operations.

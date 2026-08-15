@@ -1,134 +1,38 @@
-# LatticeCore® Platform on Kubernetes - Technical System Design 04
+# ViewSense Day-2 Operations and SRE
 
-## 1. Day-2 Operations and SRE Model
+## Observability contract
 
-This document defines how the platform is operated in production, including observability, reliability engineering, release safety, and incident handling.
+Every hop emits W3C trace context and structured telemetry with service, environment, request/trace IDs, tenant pseudonym, route/provider ID, operation, outcome, duration, and retry count. AI metrics include time to first token, tokens/sec, input/output tokens, context size, retrieval latency/hit count, tool calls/timeouts, and policy decisions. Prompt, completion, memory, and tool bodies are excluded unless a classified diagnostic policy explicitly enables them.
 
-## 1.1 Concept Alignment
+## SLOs and dependency budgets
 
-Operational controls in this document assume the canonical flow `Enterprise User or App -> API Gateway and Auth -> Fabric Layer`.
+Define SLOs separately for edge/control overhead, memory, each model route, and each MCP class. End-to-end alerts use multi-window error-budget burn. A provider outage must identify the dependency instead of presenting as generic orchestrator failure. Route changes and degraded no-memory operation are visible events.
 
-Observability and Security and Zero Trust are cross-cutting controls for every Fabric service and all runtime environments.
+## Release safety
 
-## 2. SLO Framework
+- immutable signed image digests and GitOps promotion;
+- contract tests against every configured adapter;
+- expand/migrate/contract database changes with rollback compatibility;
+- canary by non-sensitive synthetic tenant, then explicit pilot tenants;
+- rollback on security regression, error-budget burn, latency, or output-quality gate;
+- configuration rollout and application rollout independently reversible.
 
-Define SLOs per service class:
+## Backup and disaster recovery
 
-- Control APIs: availability and p95 latency.
-- Inference endpoints: time-to-first-token and stream completion latency.
-- Retrieval services: retrieval latency and success ratio.
-- MCP invocation: tool execution success and timeout rate.
+Each state owner defines RPO/RTO, encryption, retention, legal hold, restore order, and integrity verification. PostgreSQL uses PITR plus regular full backups. Vector records retain enough canonical source/embedding metadata to reindex. MCP catalog backups exclude retrievable secrets. Restore tests run monthly in an isolated environment; regional/cluster failover is exercised quarterly for required tiers.
 
-Each SLO has:
+## Incident playbooks
 
-- error budget policy
-- alert thresholds
-- rollback triggers
+- suspected cross-tenant retrieval: stop affected route, preserve audit evidence, revoke identities, assess all provider copies;
+- compromised MCP connector: disable catalog entry, block egress, revoke connector credentials, inspect invocation history;
+- provider credential leak: revoke at provider, rotate secret source, invalidate pods/tokens, check usage audit;
+- token runaway: cancel request/workflow, enforce tenant stop-loss, quarantine route;
+- model quality/safety regression: pin previous provider/model policy, preserve evaluation evidence, notify owners.
 
-## 3. Observability Stack Design
+## Capacity and cost
 
-### 3.1 Metrics
+Review GPU saturation, batching, KV-cache pressure, database index health, queue depth, connector external quotas, and tenant cost weekly. Enforce per-tenant concurrency, token, memory-storage, and tool budgets. Cost-based routing is evaluated only after capability, security, residency, and SLO constraints.
 
-- Prometheus collectors for Kubernetes, service mesh, and applications.
-- AI-specific metrics:
-  - token throughput
-  - prompt and completion token distributions
-  - cache hit ratio (Redis and retrieval cache)
-  - retrieval precision proxy and rerank latency
+## Operational readiness gate
 
-### 3.2 Logs
-
-- Structured JSON logs with mandatory fields:
-  - `tenant_id`
-  - `request_id`
-  - `trace_id`
-  - `model_id`
-  - `workflow_id`
-- Centralized log aggregation with retention classes by data sensitivity.
-
-### 3.3 Tracing
-
-- OpenTelemetry instrumentation in orchestrator, workflows, memory, MCP, and inference adapters.
-- Required span boundaries:
-  - ingress receive
-  - auth decision
-  - retrieval
-  - model invocation
-  - tool call(s)
-  - response emit
-
-## 4. Release and Change Management
-
-- GitOps-only production changes.
-- Progressive rollouts for control services and model runtimes.
-- Release gates:
-  - policy validation
-  - integration tests
-  - synthetic canary workload
-  - error budget health check
-
-Rollback policy:
-
-- automatic rollback on breach of canary SLO thresholds.
-- manual rollback runbook for partial degradation.
-
-## 5. Capacity and Cost Operations
-
-- Weekly capacity review:
-  - GPU saturation trends
-  - top tenant cost drivers
-  - queue backlog behavior
-- Autoscaling guardrails:
-  - minimum floor for premium services
-  - maximum burst caps to protect shared infrastructure
-- Cost controls:
-  - model routing policies by task complexity
-  - stop-loss budgets per tenant/workflow
-
-## 6. Backup, DR, and Resilience
-
-- PostgreSQL PITR and daily full backups.
-- Vector DB snapshot and restore validation.
-- Object storage replication and versioning.
-- Redis failover tests and keyspace recovery drills.
-
-DR testing cadence:
-
-- monthly restore tests in staging
-- quarterly region failover simulation
-
-## 7. Incident Management
-
-### 7.1 Severity Model
-
-- Sev-1: critical customer-facing outage or data boundary risk.
-- Sev-2: major degradation affecting key workflows.
-- Sev-3: partial function impairment.
-
-### 7.2 Response Workflow
-
-1. Detect and classify incident.
-2. Assign incident commander.
-3. Stabilize service (traffic shift, scaling, rollback).
-4. Execute targeted diagnostics.
-5. Recover, validate, and monitor.
-6. Publish post-incident review with action items.
-
-### 7.3 AI-Specific Playbooks
-
-- Hallucination spike containment:
-  - enforce stricter retrieval threshold
-  - disable high-risk MCP tools temporarily
-  - shift to safer model policy
-- Token runaway containment:
-  - cap max output tokens
-  - enforce tool-loop limits
-  - apply emergency tenant rate limits
-
-## 8. Operational Readiness Checklist
-
-- SLO dashboards and burn-rate alerts live.
-- Runbooks tested and discoverable.
-- On-call roster and escalation policy published.
-- DR restore test passed in last cycle.
-- Security controls attested in current release.
+No production provider is enabled until it has ownership/on-call, dashboard and alerts, SLO, capacity test, failure-mode test, security review, data-flow record, backup/restore where stateful, credential rotation, and rollback/disable instructions.
