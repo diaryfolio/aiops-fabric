@@ -53,3 +53,9 @@ All components emit OpenTelemetry metrics/traces/log correlation. Security audit
 | MCP provider | echo test server | certified enterprise MCP servers |
 | identity | local RSA token issuer | enterprise IdP + workload identity |
 | deployment | Kustomize development base | Helm/GitOps environment overlays |
+
+## Repository module boundary
+
+Runtime implementations remain small, independently deployable Python packages under `src/viewsense_*`; they are not nested inside deployment packaging. The `fabric/<capability>/` directories are the machine-readable installable catalog. Every capability directory contains a `module.json` descriptor and README that declare maturity, owned contracts, implementation paths, Helm selection paths, data ownership, and bundled/external provider choices. `fabric/module.schema.json` defines the descriptor format and the catalog conformance test rejects missing, undocumented, or dangling module entries.
+
+This separation avoids coupling application source layout to Helm or a future operator while ensuring packaging folders are executable metadata rather than placeholders. A `contract-only` catalog entry is deliberately visible but cannot be represented as implemented; Helm and documentation must retain the same maturity statement.

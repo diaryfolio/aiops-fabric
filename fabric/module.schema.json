@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://viewsense.local/schemas/module.schema.json",
+  "title": "ViewSense Fabric Module",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "fabric.viewsense.io/v1alpha1"},
+    "kind": {"const": "Module"},
+    "metadata": {
+      "type": "object",
+      "required": ["name", "title"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "title": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "spec": {
+      "type": "object",
+      "required": ["maturity", "implementationPaths", "contractPaths", "helmPaths", "dataOwnership", "providers"],
+      "properties": {
+        "maturity": {"enum": ["implemented-reference", "partial-reference", "contract-only"]},
+        "implementationPaths": {"type": "array", "items": {"type": "string"}},
+        "contractPaths": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "helmPaths": {"type": "array", "items": {"type": "string"}},
+        "dataOwnership": {"type": "array", "items": {"type": "string"}},
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "status"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "status": {"enum": ["bundled", "external", "planned"]}
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

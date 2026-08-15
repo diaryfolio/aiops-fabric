@@ -1,13 +1,24 @@
-# ViewSense Fabric Modules
+# ViewSense Fabric Module Catalog
 
-`fabric/` is the installable product catalog. Stable gateway modules are separated from replaceable products so an administrator selects capabilities and implementations through Helm values, not code changes.
+`fabric/` is machine-readable installable product metadata, not a second copy of application source. Runtime packages live under `src/viewsense_*`; module descriptors connect them to their contracts, Helm controls, provider choices, data ownership, and maturity.
 
-| Module | Stable API | Product selection |
+| Directory | Capability | Current maturity |
 |---|---|---|
-| identity integration | OAuth/OIDC and workload token boundary | development issuer or enterprise external identity |
-| edge/orchestrator | `/v1/responses` | enabled independently; provider-neutral |
-| LLM gateway | OpenAI-compatible inference API | mock, vLLM, or external OpenAI-compatible endpoint |
-| memory gateway | ViewSense memory API | PostgreSQL/pgvector or external Mem0-compatible adapter |
-| MCP gateway | registry/invocation API | bundled test provider or approved external MCP runtimes |
+| `core/` | edge API and request orchestration | implemented reference |
+| `identity/` | development workload issuer and enterprise identity boundary | implemented reference |
+| `llm/` | model gateway and inference providers | implemented reference |
+| `memory/` | memory gateway and vector providers | implemented reference |
+| `mcp-registry/` | MCP catalog and invocation boundary | implemented reference |
+| `ingestion/` | governed document chunking and indexing entry point | implemented reference |
+| `agents/` | durable bounded agent runs | contract only |
+| `workflows/` | n8n/Temporal/Argo provider boundary | contract only |
+| `observability/` | JSON/OTel/SIEM integration boundary | partial reference |
 
-The umbrella chart is `fabric/charts/viewsense`. `values.schema.json` validates supported product names. Each module can be enabled/disabled, pointed at an external provider, assigned its own image/resources, and constrained by an explicit network graph. The current chart expects certificate, identity, workload, and database Secrets to be provisioned by the platform's secret-management layer.
+Each capability directory must contain:
+
+- `README.md` for operators and developers;
+- `module.json` conforming to `module.schema.json`;
+- valid paths to its implementation and design contracts;
+- honest provider status: `bundled`, `external`, or `planned`.
+
+The umbrella chart is `fabric/charts/viewsense`. Each runtime module can be independently enabled and provider products are selected through `products.*`. External Secrets, workload identity, and production provider charts remain enterprise overlays. Run `make catalog-check` to reject missing modules, dangling paths, or README-only placeholders.

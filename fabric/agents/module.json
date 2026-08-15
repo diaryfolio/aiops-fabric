@@ -1,0 +1,16 @@
+{
+  "apiVersion": "fabric.viewsense.io/v1alpha1",
+  "kind": "Module",
+  "metadata": {"name": "agents", "title": "Bounded agent runtime"},
+  "spec": {
+    "maturity": "contract-only",
+    "implementationPaths": [],
+    "contractPaths": ["docs/design/high-level/70-agentic/01-agent-runtime-ingestion-workflows.md"],
+    "helmPaths": ["products.agentRuntime"],
+    "dataOwnership": ["planned agent run checkpoints", "planned approval state"],
+    "providers": [
+      {"name": "builtin", "status": "planned"},
+      {"name": "langgraph-compatible-external", "status": "planned"}
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "apiVersion": "fabric.viewsense.io/v1alpha1",
+  "kind": "Module",
+  "metadata": {"name": "ingestion", "title": "Governed document ingestion"},
+  "spec": {
+    "maturity": "implemented-reference",
+    "implementationPaths": ["src/viewsense_ingestion/app.py", "src/viewsense_ingestion/chunking.py"],
+    "contractPaths": ["docs/design/high-level/70-agentic/01-agent-runtime-ingestion-workflows.md"],
+    "helmPaths": ["products.ingestion", "modules.ingestion"],
+    "dataOwnership": ["synchronous ingestion request state"],
+    "providers": [
+      {"name": "builtin-deterministic", "status": "bundled"},
+      {"name": "unstructured-compatible-external", "status": "external"}
+    ]
+  }
+}

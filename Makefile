@@ -1,4 +1,4 @@
-.PHONY: bootstrap lint unit compose-up compose-test k8s-deploy k8s-test
+.PHONY: bootstrap lint unit catalog-check compose-up compose-test k8s-deploy k8s-test
 
 bootstrap:
 	./scripts/bootstrap-dev-pki.sh
@@ -10,6 +10,10 @@ lint:
 unit:
 	docker build --target test -t viewsense-test:dev .
 	docker run --rm viewsense-test:dev pytest -q -p no:cacheprovider
+
+catalog-check:
+	docker build --target test -t viewsense-test:dev .
+	docker run --rm viewsense-test:dev pytest -q -p no:cacheprovider tests/unit/test_module_catalog.py
 
 compose-up: bootstrap
 	docker compose --env-file .env.viewsense up --build -d

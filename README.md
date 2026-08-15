@@ -58,4 +58,6 @@ The in-repository identity issuer, static development CA, mock LLM, mock MCP ser
 
 Start with [the architecture index](docs/design/high-level/design_01.md) and [the deployment design](docs/design/high-level/20-deployment/01-deployment-topology-sizing.md).
 
+Copy-paste validation commands, including direct memory API write/search and negative authorization checks, are in [tests/README.md](tests/README.md).
+
 All contributors and coding agents must follow the design-sync rules in [CLAUDE.md](CLAUDE.md).

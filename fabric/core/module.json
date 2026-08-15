@@ -1,0 +1,13 @@
+{
+  "apiVersion": "fabric.viewsense.io/v1alpha1",
+  "kind": "Module",
+  "metadata": {"name": "core", "title": "Core API and orchestration"},
+  "spec": {
+    "maturity": "implemented-reference",
+    "implementationPaths": ["src/viewsense_gateway/app.py", "src/viewsense_orchestrator/app.py"],
+    "contractPaths": ["docs/design/high-level/10-overall/03-api-integration-standards.md"],
+    "helmPaths": ["modules.gateway", "modules.orchestrator"],
+    "dataOwnership": ["request state", "response assembly metadata"],
+    "providers": [{"name": "built-in", "status": "bundled"}]
+  }
+}
