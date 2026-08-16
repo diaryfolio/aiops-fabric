@@ -164,10 +164,10 @@ make openai-enable
 make ports-start
 ```
 
-`openai-enable` rebuilds the development image, generates the adapter identity, stores the key in
-the `openai-credentials` Kubernetes Secret, and switches only the LLM gateway route. The key is
-mounted only in `openai-adapter`; the gateway, orchestrator, memory services, and client never
-receive it.
+`openai-enable` expects the base suite to be installed, stores the key in the
+`openai-credentials` Kubernetes Secret, and switches only the LLM gateway route. The key is mounted
+only in `openai-adapter`; the gateway, orchestrator, memory services, and client never receive it.
+Use `make openai-enable-fresh` only when an image rebuild and base rollout are also required.
 
 Load the generated development client secret and obtain separate least-privilege tokens:
 

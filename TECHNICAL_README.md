@@ -54,6 +54,9 @@ The machine-readable list and exact readiness are in [fabric/PRODUCTS.md](fabric
 
 Prerequisites: Docker, `kubectl`, `k3d`, and a current Kubernetes context that points to the intended development cluster.
 
+Use the [ViewSense quick start](QUICKSTART.md) for first installation, normal daily startup,
+cluster recovery, secure OpenAI configuration, port-forwards, testing, and shutdown.
+
 ```bash
 make unit
 make lint
@@ -63,6 +66,10 @@ make k8s-test
 ```
 
 The deployment script builds `viewsense-core:dev`, imports it into k3d, creates short-lived development credentials, and applies resources only to `viewsense-dev`. Generated keys and credentials live under `.viewsense/` and are ignored by Git.
+
+`make k8s-deploy` is an installation/update action, not an everyday cluster-start command. On an
+installed suite, `make openai-enable` changes only provider configuration; use
+`make openai-enable-fresh` when a full rebuild is also required.
 
 Docker Compose is retained as a quick developer harness:
 

@@ -87,5 +87,7 @@ explicitly.
 - Data owners requiring lineage, retention, residency, and deletion controls.
 
 For the current embedded/integratable product list, see the [product catalog](fabric/PRODUCTS.md).
+For installation, daily startup, OpenAI configuration, testing, and shutdown, see the
+[quick start](QUICKSTART.md).
 For architecture, installation, and engineering details, see the [technical guide](TECHNICAL_README.md).
 For copy-paste validation, see the [test guide](tests/README.md).
