@@ -65,7 +65,8 @@ kubectl get pods -n viewsense-dev
 ```
 
 Expected: all Deployments and all four StatefulSets (memory, registry, governance, and agent) are
-ready, and `viewsense-smoke` completes successfully.
+ready, `viewsense-smoke` completes successfully, required gateway/orchestrator paths connect, and
+the unused gateway-to-ingestion and orchestrator-to-MCP paths are blocked by the cluster CNI.
 
 ## 4. Direct memory API validation
 
@@ -658,7 +659,9 @@ kubectl logs -n viewsense-dev deployment/memory-postgres --tail=20
 - The `smoke` client, local issuer, static CA, mock providers, and deterministic embeddings are development-only.
 - Do not expose identity, memory, model, MCP, or provider services through public ingress.
 - Direct internal API tests use the fixed-tenant `smoke` identity. Unsigned tenant headers are rejected; public and internal tenant context comes from the signed Trust Envelope.
-- Production validation additionally requires CNI negative connectivity tests, enterprise IdP/workload identity, external secret rotation, backup/restore, HA/failure exercises, and SIEM/OTel evidence.
+- The development suite proves two representative CNI denials. Production still requires the full
+  source/destination/port negative matrix, enterprise IdP/workload identity, external secret
+  rotation, backup/restore, HA/failure exercises, and SIEM/OTel evidence.
 
 ## Validation evidence matrix
 

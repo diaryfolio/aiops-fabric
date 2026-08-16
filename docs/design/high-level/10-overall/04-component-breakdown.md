@@ -76,7 +76,8 @@ The bundled online agent runtime is a persistent bounded state machine. It imple
 creation, optimistic versions, step/cost/tool budgets, checkpoint, approval/rejection, cancellation,
 terminal states, and ordered event history in its own PostgreSQL database. It owns run/checkpoint
 state but no provider data. Automatic plan/model/tool workers and external workflow adapters are not
-yet implemented. The ingestion service owns document ingestion jobs and deterministic chunking;
+yet implemented. The ingestion service owns synchronous ingestion request handling and deterministic
+chunking;
 parsing, enrichment, embeddings, and vector persistence remain replaceable stages.
 
 ## Identity and policy

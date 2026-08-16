@@ -85,7 +85,10 @@ sequenceDiagram
     G-->>C: response + X-Request-ID
 ```
 
-## Failure rules
+## Target failure rules
+
+The reference clients enforce bounded timeouts and do not silently fall back across providers.
+Shared retry, jitter, circuit-breaker, and end-to-end deadline-budget behavior is not yet shipped.
 
 - One end-to-end deadline is subdivided into retrieval, inference, and tool budgets.
 - Retries are allowed only for operations documented as idempotent and are bounded with jitter.

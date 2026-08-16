@@ -13,7 +13,7 @@ This repository contains the architecture and an executable Kubernetes reference
 - MCP registry and invocation gateway with a test provider;
 - a persistent bounded agent runtime with idempotent creation, checkpoints, approval, cancellation,
   optimistic concurrency, budgets, and ordered event history;
-- short-lived, audience-bound workload tokens plus mutual TLS on every API hop;
+- short-lived, audience-bound workload tokens plus mutual TLS on every internal API hop;
 - optional external OIDC/Keycloak verification at the edge and OPA provider-admission decisions;
 - deny-by-default Kubernetes network policies and separate data stores;
 - cryptographically bound Trust Envelope delegation plus provider passport, evaluation-admission, and safe evidence APIs.

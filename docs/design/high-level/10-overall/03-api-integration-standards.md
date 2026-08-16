@@ -49,7 +49,7 @@ flowchart LR
 - identity-signed ViewSense Trust Envelope v1 containing tenant, delegated caller, subject,
   purpose, classification, and request correlation;
 - stable `X-Request-ID`; inbound `traceparent` is logged, while complete W3C propagation is planned;
-- `Idempotency-Key` for retriable creates and tool calls with declared idempotency;
+- target use of `Idempotency-Key` for retriable creates and tool calls with declared idempotency;
 - absolute deadline or remaining timeout budget.
 
 The current slice implements token audience/scope, certificate-required TLS, signed tenant delegation, request ID,

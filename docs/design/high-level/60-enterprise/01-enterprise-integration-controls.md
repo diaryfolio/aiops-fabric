@@ -117,7 +117,8 @@ OTLP exporters, sampling, delivery acknowledgement, and fail-closed audit delive
 
 Implemented now: JSON access/runtime logs, `X-Request-ID` correlation, certificate-required TLS,
 audience/scoped tokens, signed Trust Envelope tenant delegation, external OIDC edge verification,
-built-in/OPA provider admission, append-only safe evidence metadata, durable bounded agent state,
+built-in provider admission plus an OPA decision boundary, append-only safe evidence metadata,
+durable bounded agent state,
 PostgreSQL/pgvector and Mem0 adapter boundaries, restricted pods, network policies, API schemas,
 profile rendering, and positive/negative smoke tests. Configuration-ready but environment-dependent:
 the credential-isolated OpenAI adapter, Keycloak/generic OIDC, OPA sidecar, Mem0, and collector

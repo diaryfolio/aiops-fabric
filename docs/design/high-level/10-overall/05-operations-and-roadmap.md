@@ -52,4 +52,7 @@ End-to-end SLOs must not hide provider performance. Each hop reports its own bud
 
 ## Reference test gates
 
-The repository requires static checks, unit security/embedding tests, rendered Kubernetes validation, and an end-to-end smoke job that verifies denial without a token, a full model request, persisted memory retrieval, MCP registration, and an authorized MCP call.
+The repository requires static checks, unit security/embedding tests, rendered Kubernetes
+validation, an end-to-end smoke job that verifies denial without a token plus the model, memory,
+ingestion, MCP, governance, and agent paths, and paired in-pod probes for representative allowed and
+CNI-denied connections.

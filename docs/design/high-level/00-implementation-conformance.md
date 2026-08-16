@@ -39,9 +39,11 @@ flowchart LR
     Gateway & Orchestrator & MemoryGateway & LLMGateway & Ingestion & MCPGateway --> Identity
 ```
 
-All application-to-application arrows above use TLS with a client certificate plus a short-lived
-audience/scoped token. The development CA proves encrypted, authenticated transport; it does not
-provide SPIFFE identity binding. Tenant context is carried in the signed Trust Envelope.
+All solid internal ViewSense service-to-service calls above use TLS with a client certificate plus
+a short-lived audience/scoped token. Calls from provider adapters to external vendor APIs instead
+use the vendor's HTTPS authentication contract. The development CA proves encrypted, authenticated
+transport; it does not provide SPIFFE identity binding. Tenant context is carried in the signed
+Trust Envelope.
 
 ## Capability maturity
 
@@ -113,7 +115,7 @@ shipped.
 | policy | built-in admission and optional OPA sidecar | implemented/configuration-ready |
 | observability | JSON stdout, request ID propagation, inbound `traceparent` logging | native metrics, trace propagation, and OTLP export planned |
 | audit/evidence | payload-minimized append-only API semantics in PostgreSQL | implemented reference; immutable export planned |
-| Kubernetes isolation | ServiceAccounts, restricted contexts, default-deny NetworkPolicy manifests | manifests implemented; CNI enforcement must be tested per cluster |
+| Kubernetes isolation | ServiceAccounts, restricted contexts, default-deny NetworkPolicy manifests | implemented; development suite pairs allowed paths with two CNI-denied paths, while production requires the full matrix |
 
 ## Verification map
 
@@ -125,7 +127,7 @@ flowchart LR
     Helm["values + profiles"] --> Render["Helm lint/template"]
     Kustomize["base + overlays"] --> Render
     Render --> K8s["viewsense-dev rollout"]
-    K8s --> Smoke["auth denial + response + memory + ingestion + MCP + governance + agent"]
+    K8s --> Smoke["auth/CNI denial + response + memory + ingestion + MCP + governance + agent"]
     OpenAIProfile["customer key + OpenAI overlay"] --> Live["manual synthetic memory-grounding test"]
 ```
 

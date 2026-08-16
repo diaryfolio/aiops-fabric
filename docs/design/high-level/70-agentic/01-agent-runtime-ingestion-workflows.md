@@ -54,15 +54,18 @@ This worker loop is planned; its diagram is an authorization model, not deployed
 ### Agent API contract
 
 - `POST /v1/agent-runs` creates an idempotent run and returns a run resource.
-- `GET /v1/agent-runs/{id}` reads current state and safe event summaries.
-- `POST /v1/agent-runs/{id}:resume` supplies an approval/edited action or external signal.
-- `POST /v1/agent-runs/{id}:cancel` requests cooperative cancellation.
-- `GET /v1/agent-runs/{id}/events` returns ordered versioned state events; SSE is a compatible
+- `GET /v1/agent-runs/{run_id}` reads current state.
+- `POST /v1/agent-runs/{run_id}:resume` applies an authorized lifecycle transition.
+- `POST /v1/agent-runs/{run_id}:cancel` moves a non-terminal run to cancelled.
+- `GET /v1/agent-runs/{run_id}/events` returns ordered versioned state events; SSE is a compatible
   future transport.
 
 Implementations such as a built-in state machine or LangGraph remain behind this contract. Durable state is mandatory for background runs and approval pauses. Side effects use idempotency keys and are recorded before/after execution to prevent replay after recovery.
 
-### Guardrails
+The side-effect rule is a target invariant; the current lifecycle kernel does not execute side
+effects.
+
+### Target guardrails
 
 - maximum steps, model calls, tool calls, wall time, tokens, cost, parallel branches, and observation size;
 - per-tool read/write/destructive classification and argument policy;
@@ -96,7 +99,11 @@ flowchart LR
     X -->|"fail"| R["Quarantine / review"]
 ```
 
-Chunking is a strategy provider. Baseline strategies are paragraph/basic, by-title/section, by-page, table-aware, code-aware, and semantic similarity. Hard limits come from the selected embedding/model capability. Overlap is explicit and versioned. The original artifact and parsed element lineage are retained so an index can be rebuilt without trusting old vectors.
+Chunking is a strategy provider. Target strategies include paragraph/basic, by-title/section,
+by-page, table-aware, code-aware, and semantic similarity. Hard limits come from the selected
+embedding/model capability. Overlap is explicit and versioned. The target pipeline retains the
+original artifact and parsed element lineage so an index can be rebuilt without trusting old
+vectors.
 
 AI-assisted enrichment may add contextual prefixes, summaries, entities, questions, classifications, or relationship edges, but it runs after security classification and before embeddings. Generated enrichment is labelled, confidence-scored, provenance-linked, schema-validated, and never overwrites source text. Low-confidence or policy-sensitive output is quarantined. This prevents an LLM from silently corrupting enterprise knowledge.
 

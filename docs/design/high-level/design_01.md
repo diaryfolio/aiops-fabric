@@ -41,6 +41,9 @@ design are not evidence that a capability is deployed.
 
 ## Reference request path
 
+This sequence shows the optional OpenAI-selected route. The deterministic regression route stops at
+the LLM gateway's mock adapter and is the default after a base deployment.
+
 ```mermaid
 sequenceDiagram
     participant Client
@@ -53,7 +56,7 @@ sequenceDiagram
     Client->>Edge: POST /v1/responses + tenant token
     Edge->>Orchestrator: mTLS + audience token + derived tenant
     Orchestrator->>Memory: search through stable memory API
-    Memory-->>Orchestrator: policy-filtered memories
+    Memory-->>Orchestrator: tenant/owner-bound memories
     Orchestrator->>LLM: OpenAI-compatible completion request
     LLM->>OpenAIAdapter: mTLS + aud: openai-adapter + provider.invoke
     OpenAIAdapter->>OpenAI: Bearer provider key + minimized request
@@ -84,14 +87,17 @@ sequenceDiagram
 
 The current code proves edge-to-orchestrator-to-memory/LLM flow, a credential-isolated OpenAI
 adapter, PostgreSQL/pgvector and Mem0
-memory boundaries, MCP registration/invocation, persistent bounded agent lifecycle, signed Trust
-Envelope tenant delegation, external OIDC validation, built-in or OPA admission, append-only safe
+memory boundaries, MCP registration and ViewSense tool-provider invocation, persistent bounded
+agent lifecycle, signed Trust
+Envelope tenant delegation, external OIDC validation, built-in admission plus an OPA decision
+boundary, append-only safe
 evidence events, mTLS, scoped tokens, database ownership, provider host allow-listing, network
 segmentation, and Kubernetes deployment. The OpenAI adapter is configuration-ready and its live
 test requires a customer key; the deterministic mock remains the default regression provider.
 When the OpenAI adapter is selected, its local default model comes from the non-secret
 `config/models.env` and is currently `gpt-5.6-luna`; callers cannot override that server-controlled
-route through the public request model field.
+route through the public request model field. Built-in provider admission is executable; OPA has an
+executable decision boundary and chart sidecar but remains environment-dependent.
 Keycloak and SPIRE are documented managed integrations;
 their operators are not bundled. Autonomous agent workers, workflow adapters, cryptographic
 third-party passport verification, immutable evidence export, full OpenTelemetry, HA, backups, and
