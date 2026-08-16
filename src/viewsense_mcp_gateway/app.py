@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from viewsense_common.auth import TokenVerifier
 from viewsense_common.client import ServiceClient
+from viewsense_common.database import create_pool_with_retry
 from viewsense_common.settings import csv
 from viewsense_common.tenant import delegated_tenant
 
@@ -21,7 +22,7 @@ pool: asyncpg.Pool | None = None
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     global pool
-    pool = await asyncpg.create_pool(dsn=os.environ["VS_DATABASE_URL"], min_size=1, max_size=5)
+    pool = await create_pool_with_retry(os.environ["VS_DATABASE_URL"])
     async with pool.acquire() as connection:
         await connection.execute(
             """
@@ -98,7 +99,7 @@ async def register_server(name: str, body: ServerRegistration, request: Request)
 
 @app.post("/v1/tools/call")
 async def call_tool(body: ToolCall, request: Request) -> dict:
-    auth.from_request(request, "mcp.invoke")
+    principal = auth.from_request(request, "mcp.invoke")
     tenant_id = delegated_tenant(request)
     async with database().acquire() as connection:
         server = await connection.fetchrow(
@@ -113,6 +114,7 @@ async def call_tool(body: ToolCall, request: Request) -> dict:
         audience=server["audience"],
         scope="provider.invoke",
         tenant_id=tenant_id,
+        trust_envelope=principal.trust_envelope,
         json={"tool": body.tool, "arguments": body.arguments},
     )
     if upstream.status_code >= 400:

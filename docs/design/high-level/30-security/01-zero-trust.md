@@ -12,6 +12,7 @@ Compromise of one component must not grant implicit access to another component,
 | edge → orchestrator | workload mTLS + audience token | `orchestrate.invoke` | explicit NetworkPolicy |
 | orchestrator → gateway | workload mTLS + audience token | capability-specific scope | no provider credential in orchestrator |
 | gateway → provider | workload mTLS + provider audience | `provider.invoke`, provider policy | dedicated provider network/namespace |
+| OpenAI adapter → OpenAI | server-held API key + HTTPS | provider project/model limits | adapter-only Secret and constrained public egress |
 | provider → database | database identity and TLS | owner schema/user only | only owning provider can reach store |
 | MCP → enterprise system | connector workload identity | per-tool/action/data policy | egress allow-list and isolated credentials |
 
@@ -19,11 +20,29 @@ Compromise of one component must not grant implicit access to another component,
 
 Human identity federates to the enterprise IdP using OIDC Authorization Code + PKCE or workload-appropriate OAuth flows. Workloads receive renewable, short-lived identities through SPIFFE/SPIRE, service mesh, or cloud workload identity. Application tokens have exact `aud`, narrow scopes, expiry, unique ID, and issuer. Shared bearer tokens, namespace trust, and long-lived API keys are prohibited.
 
-The development issuer uses client credentials and RS256 plus a generated CA to make these properties testable. It is not an enterprise IdP and must not be promoted.
+The development issuer uses client credentials and RS256 plus a generated CA to make these properties testable. It is not an enterprise IdP and must not be promoted. At the edge, the external OIDC verifier pins an HTTPS issuer and JWKS URL, exact audience, supported signature algorithms, required scopes, subject, and configured tenant claim. Keycloak is one compatible IdP, not a mandatory control-plane component. JWKS/IdP unavailability fails authentication closed.
 
-## Tenant and authorization
+SPIRE is a cluster workload-identity authority, not an application library or proof of authorization.
+Production installs its server/agent lifecycle separately, maps each service account to a unique
+SPIFFE ID, rotates SVIDs, and presents them through an SDS-capable proxy or service mesh. ViewSense
+still requires exact token audience/scopes and tenant policy after mTLS succeeds.
 
-The edge derives tenant from verified claims. Internal `X-ViewSense-Tenant` is delegation metadata accepted only with an authorized caller token; external caller headers cannot select a tenant. Data queries include tenant and owner/purpose predicates. Production adds policy decisions for classification, legal basis, retention, model class, connector action, and residency both before retrieval and after candidate retrieval.
+## Tenant, Trust Envelope, and authorization
+
+The edge derives tenant from verified claims. Tenant and business context are signed claims, never an unsigned transport header. Trust Envelope v1 binds tenant, delegating workload, subject, purpose, classification, request correlation, audience, scopes, and expiry. Only registered delegators may request tenant-bound downstream tokens; fixed-tenant clients cannot change tenant. Receivers reject legacy tenant headers, missing envelopes, audience mismatch, inconsistent top-level/envelope tenants, and unsupported versions.
+
+Production uses standards-based token exchange or equivalent workload delegation while retaining the ViewSense envelope schema. Each hop obtains a new audience token rather than forwarding a human token or mutable context header. Data queries include tenant and owner/purpose predicates. Production adds policy decisions for classification, legal basis, retention, model class, connector action, and residency both before retrieval and after candidate retrieval.
+
+Provider admission may consult OPA through its Data API. The bundled OPA profile runs a policy
+sidecar in the governance pod; policy input contains provider metadata and requested constraints,
+not credentials or payloads. Timeout, malformed response, non-success response, missing result, and
+explicit deny all fail closed. OPA does not replace API authorization or workload identity.
+
+## Provider and evidence trust
+
+Provider passports are untrusted assertions until signature, provenance, evaluation, ownership, expiry, residency, and policy checks succeed. Admission is time-bound and revocable. An admitted provider receives no credentials until workload identity and egress policy also allow the connection.
+
+Evidence APIs accept payload-minimized metadata only. Append-only API semantics do not make the reference PostgreSQL database an immutable audit store; production exports to an independently controlled integrity and retention system.
 
 ## MCP threat model
 
@@ -41,6 +60,13 @@ MCP servers and returned content are untrusted. Controls include exact HTTPS hos
 
 Production secrets originate in Vault or a cloud secret manager, arrive through workload identity, rotate automatically, and are never present in Git or images. Certificates are short-lived and automatically renewed. Databases, backups, and object storage use enterprise-managed encryption keys. Algorithms and issuers are configuration with a tested rotation/overlap procedure.
 
+The development OpenAI key is entered through a non-echoing terminal prompt and piped to a
+namespaced Kubernetes Secret without appearing in command arguments or repository files. Only the
+adapter pod references that Secret. Application logs never include request bodies, authorization
+headers, upstream error bodies, or the key. Production replaces this manual Secret with external
+secret synchronization, provider-side project restrictions, rotation, usage alerts, and immediate
+revocation procedures.
+
 ## Supply chain
 
 CI generates SBOMs, scans dependencies/images/IaC, signs artifacts and provenance, and admits only trusted digests. Pods use restricted security contexts. Provider and MCP adapter additions require threat modeling, conformance tests, and review of their network and secret permissions.
@@ -49,7 +75,15 @@ CI generates SBOMs, scans dependencies/images/IaC, signs artifacts and provenanc
 
 - missing/expired token, wrong audience, wrong scope, and untrusted client certificate;
 - caller-supplied tenant substitution and cross-tenant memory search;
+- missing/malformed Trust Envelope, fixed-tenant delegation attempt, and legacy tenant header;
+- expired/revoked/unevaluated provider admission and sensitive evidence metadata;
 - disallowed MCP URL, DNS/IP/redirect SSRF cases, and undeclared tool;
 - direct orchestrator-to-provider/database network attempts;
 - provider credential absence in callers;
 - policy/identity unavailability fails closed for protected operations.
+- OIDC wrong issuer/audience/algorithm, missing tenant/scope, stale key, and JWKS outage;
+- OPA timeout/malformed/deny and SPIFFE ID/SVID rotation or spoof failures;
+- agent approval with `agent.run` only, stale version replay, invalid state transition, and budget exhaustion.
+- OpenAI key absent/revoked, upstream 401/429/timeout/malformed response, caller model override,
+  upstream URL/redirect manipulation, direct non-adapter egress, and credential absence from all
+  gateway/orchestrator pod specifications and logs.

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://viewsense.local/schemas/evidence-event-v1.schema.json",
+  "title": "ViewSense Evidence Event v1 Input",
+  "type": "object",
+  "required": ["run_id", "event_type", "outcome"],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "event_type": {"type": "string", "pattern": "^[a-z][a-z0-9._-]{0,127}$"},
+    "outcome": {"enum": ["success", "denied", "failed", "pending", "cancelled"]},
+    "policy_version": {"type": ["string", "null"], "maxLength": 128},
+    "config_version": {"type": ["string", "null"], "maxLength": 128},
+    "artifact_refs": {"type": "array", "maxItems": 64, "items": {"type": "string"}},
+    "metadata": {"type": "object"},
+    "occurred_at": {"type": "string", "format": "date-time"}
+  },
+  "additionalProperties": false
+}

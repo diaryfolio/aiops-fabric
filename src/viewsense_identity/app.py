@@ -52,6 +52,23 @@ async def issue_token(request: Request) -> dict:
     if not grant or not requested_scopes or not requested_scopes.issubset(set(grant)):
         raise HTTPException(403, "requested audience or scope is not granted")
 
+    requested_tenant = form.get("tenant_id", [""])[0].strip()
+    fixed_tenant = str(client.get("tenant_id", "")).strip()
+    if fixed_tenant and requested_tenant and requested_tenant != fixed_tenant:
+        raise HTTPException(403, "fixed-tenant client cannot delegate another tenant")
+    tenant_id = fixed_tenant or requested_tenant
+    if requested_tenant and not fixed_tenant and not client.get("can_delegate_tenant", False):
+        raise HTTPException(403, "client is not allowed to delegate tenant context")
+    if tenant_id and (len(tenant_id) > 128 or not tenant_id.replace("-", "").isalnum()):
+        raise HTTPException(400, "invalid tenant_id")
+
+    subject = form.get("subject", [client_id])[0].strip() or client_id
+    purpose = form.get("purpose", ["service-operation"])[0].strip()
+    classification = form.get("classification", ["internal"])[0].strip()
+    request_id = form.get("request_id", [""])[0].strip()
+    if any(len(value) > 128 for value in (subject, purpose, classification, request_id)):
+        raise HTTPException(400, "trust envelope field is too long")
+
     now = int(time.time())
     expires_in = int(os.getenv("VS_TOKEN_TTL_SECONDS", "300"))
     claims = {
@@ -64,7 +81,16 @@ async def issue_token(request: Request) -> dict:
         "jti": secrets.token_urlsafe(16),
         "scope": " ".join(sorted(requested_scopes)),
     }
-    if client.get("tenant_id"):
-        claims["tenant_id"] = client["tenant_id"]
+    if tenant_id:
+        claims["tenant_id"] = tenant_id
+        claims["vs_ctx"] = {
+            "version": "1",
+            "tenant_id": tenant_id,
+            "delegated_by": client_id,
+            "subject": subject,
+            "purpose": purpose or "service-operation",
+            "classification": classification or "internal",
+            "request_id": request_id or None,
+        }
     access_token = jwt.encode(claims, PRIVATE_KEY, algorithm="RS256")
     return {"access_token": access_token, "token_type": "Bearer", "expires_in": expires_in}

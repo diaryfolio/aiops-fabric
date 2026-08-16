@@ -21,6 +21,12 @@ Define SLOs separately for edge/control overhead, memory, each model route, and 
 
 Each state owner defines RPO/RTO, encryption, retention, legal hold, restore order, and integrity verification. PostgreSQL uses PITR plus regular full backups. Vector records retain enough canonical source/embedding metadata to reindex. MCP catalog backups exclude retrievable secrets. Restore tests run monthly in an isolated environment; regional/cluster failover is exercised quarterly for required tiers.
 
+The agent database is a separate state owner. Restore it before resuming workers, hold all restored
+runs paused until version/idempotency reconciliation completes, and never infer that a side effect
+must be repeated merely because an event is absent. Mem0 backup/export, Keycloak realm recovery,
+SPIRE trust-bundle recovery, OPA bundle rollback, and workflow recovery remain owned by their
+selected product operators and must be tested with the ViewSense conformance suite.
+
 ## Incident playbooks
 
 - suspected cross-tenant retrieval: stop affected route, preserve audit evidence, revoke identities, assess all provider copies;
@@ -29,6 +35,16 @@ Each state owner defines RPO/RTO, encryption, retention, legal hold, restore ord
 - token runaway: cancel request/workflow, enforce tenant stop-loss, quarantine route;
 - model quality/safety regression: pin previous provider/model policy, preserve evaluation evidence, notify owners.
 
+For an OpenAI route, 401/403 indicates credential/configuration failure and pages the route owner;
+429 is a capacity/quota signal and must not cause residency-unsafe fallback; timeout/5xx consumes
+the provider dependency budget. Rollback runs `make openai-disable` in development or promotes the
+previous signed route configuration in production. Rotate/revoke the provider key at OpenAI first,
+then synchronize the secret and restart only the adapter; verify callers and logs never contain it.
+The local OpenAI model default is controlled by `config/models.env` and currently resolves to
+`gpt-5.6-luna`. Changing that default requires replaying representative
+memory-grounding, safety, latency, token-usage, and output-contract evaluations before promotion;
+rollback restores the last admitted model value without changing the stable ViewSense API.
+
 ## Capacity and cost
 
 Review GPU saturation, batching, KV-cache pressure, database index health, queue depth, connector external quotas, and tenant cost weekly. Enforce per-tenant concurrency, token, memory-storage, and tool budgets. Cost-based routing is evaluated only after capability, security, residency, and SLO constraints.
@@ -36,3 +52,18 @@ Review GPU saturation, batching, KV-cache pressure, database index health, queue
 ## Operational readiness gate
 
 No production provider is enabled until it has ownership/on-call, dashboard and alerts, SLO, capacity test, failure-mode test, security review, data-flow record, backup/restore where stateful, credential rotation, and rollback/disable instructions.
+
+Provider readiness is represented by an expiring passport plus evaluation/admission records. Operations alert before passport, certificate, evidence, or evaluation expiry and automatically prevent new routing after revocation or expiry. The governance database is backed up and restored before dependent provider catalogs; production evidence is also exported to an independently administered immutable sink.
+
+Database-owning services use bounded startup retries because Kubernetes readiness ordering does not
+guarantee that a newly reachable database is accepting connections. Exhaustion fails startup and is
+visible through JSON logs and readiness. Development rollouts restart services sequentially to avoid
+an all-service surge on a small cluster; production availability strategy is defined by its overlay,
+capacity budget, disruption budget, and tested rollback.
+
+Trust Envelope failures are separated into missing context, unsupported version, tenant inconsistency, delegation denial, expired token, wrong audience, and insufficient scope. They are security signals and must not trigger fallback to an unsigned header or a less-restricted provider.
+
+Product readiness is read from `fabric/product-catalog.json`: `validated` has repository evidence,
+`configuration-ready` has an executable ViewSense integration boundary but needs the selected
+environment, and `planned` is declaration-only. Render every profile with `make profile-check`.
+Never report a profile as installed merely because Helm accepts its values.

@@ -10,7 +10,9 @@
     "dataOwnership": ["development client grants", "development signing keys"],
     "providers": [
       {"name": "development", "status": "bundled"},
-      {"name": "external-oidc", "status": "external"}
+      {"name": "external-oidc", "status": "external"},
+      {"name": "keycloak-oidc", "status": "external"},
+      {"name": "spire", "status": "external"}
     ]
   }
 }

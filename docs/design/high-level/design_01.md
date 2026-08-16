@@ -2,7 +2,15 @@
 
 ## Decision
 
-ViewSense is an API-first, Kubernetes-native AI backbone, not a bundled AI product. It owns policy, routing, orchestration, audit context, and stable contracts. Model, memory, workflow, and MCP implementations are providers behind those contracts.
+ViewSense is an API-first, Kubernetes-native sovereign AI control and evidence fabric with a small
+portable reference suite. It owns portable trust envelopes, provider admission, policy, routing,
+bounded agent state, safe evidence context, and stable contracts. Model, memory, workflow, identity,
+policy, and MCP products remain replaceable behind those contracts.
+
+Product packaging uses four explicit modes: `bundled`, `adapter`, `managed-dependency`, and
+`external`. A bundled component is installed and tested with ViewSense; an adapter is installed but
+its upstream product is separate; a managed dependency is installed/operated at platform scope; an
+external product is reached through an API. Product selection never implies product installation.
 
 ## System boundaries
 
@@ -13,6 +21,7 @@ ViewSense is an API-first, Kubernetes-native AI backbone, not a bundled AI produ
 | Provider | LLM inference, memory implementation, MCP execution | tenant authentication policy or public routing |
 | Data | storage owned by exactly one service/provider | cross-service tables or direct consumer access |
 | Security/operations | identity, policy decisions, secrets, telemetry, audit | business workflow semantics |
+| Governance/evidence | provider passports, evaluations, admissions, safe lineage events | provider payload data or execution credentials |
 
 ## Mandatory invariants
 
@@ -33,11 +42,17 @@ sequenceDiagram
     participant Orchestrator
     participant Memory
     participant LLM
+    participant OpenAIAdapter
+    participant OpenAI
     Client->>Edge: POST /v1/responses + tenant token
     Edge->>Orchestrator: mTLS + audience token + derived tenant
     Orchestrator->>Memory: search through stable memory API
     Memory-->>Orchestrator: policy-filtered memories
     Orchestrator->>LLM: OpenAI-compatible completion request
+    LLM->>OpenAIAdapter: mTLS + aud: openai-adapter + provider.invoke
+    OpenAIAdapter->>OpenAI: Bearer provider key + minimized request
+    OpenAI-->>OpenAIAdapter: provider completion
+    OpenAIAdapter-->>LLM: normalized safe response
     LLM-->>Orchestrator: normalized completion
     Orchestrator->>Memory: store interaction when enabled
     Orchestrator-->>Client: response + request ID
@@ -56,7 +71,21 @@ sequenceDiagram
 9. [Roadmap and maturity](50-roadmap/01-roadmap-maturity.md)
 10. [Enterprise integration and control matrix](60-enterprise/01-enterprise-integration-controls.md)
 11. [Agent runtime, ingestion, and workflow design](70-agentic/01-agent-runtime-ingestion-workflows.md)
+12. [Sovereign control and evidence fabric](80-future/01-sovereign-control-evidence-fabric.md)
 
 ## Implemented reference slice
 
-The current code proves edge-to-orchestrator-to-memory/LLM flow, MCP registration/invocation, mTLS, scoped tokens, database ownership, provider host allow-listing, network segmentation, and Kubernetes deployment. Streaming, enterprise identity federation, external policy engines, durable workflow execution, full OpenTelemetry, HA, backups, and real provider adapters remain roadmap work and are not represented as complete.
+The current code proves edge-to-orchestrator-to-memory/LLM flow, a credential-isolated OpenAI
+adapter, PostgreSQL/pgvector and Mem0
+memory boundaries, MCP registration/invocation, persistent bounded agent lifecycle, signed Trust
+Envelope tenant delegation, external OIDC validation, built-in or OPA admission, append-only safe
+evidence events, mTLS, scoped tokens, database ownership, provider host allow-listing, network
+segmentation, and Kubernetes deployment. The OpenAI adapter is configuration-ready and its live
+test requires a customer key; the deterministic mock remains the default regression provider.
+When the OpenAI adapter is selected, its local default model comes from the non-secret
+`config/models.env` and is currently `gpt-5.6-luna`; callers cannot override that server-controlled
+route through the public request model field.
+Keycloak and SPIRE are documented managed integrations;
+their operators are not bundled. Autonomous agent workers, workflow adapters, cryptographic
+third-party passport verification, immutable evidence export, full OpenTelemetry, HA, backups, and
+provider certification remain roadmap work and are not represented as complete.

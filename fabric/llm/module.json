@@ -4,12 +4,13 @@
   "metadata": {"name": "llm", "title": "LLM gateway and inference providers"},
   "spec": {
     "maturity": "implemented-reference",
-    "implementationPaths": ["src/viewsense_llm_gateway/app.py", "src/viewsense_mock_llm/app.py"],
+    "implementationPaths": ["src/viewsense_llm_gateway/app.py", "src/viewsense_mock_llm/app.py", "src/viewsense_openai_adapter/app.py"],
     "contractPaths": ["docs/design/high-level/10-overall/03-api-integration-standards.md"],
-    "helmPaths": ["products.llm", "modules.llm-gateway", "modules.mock-llm"],
+    "helmPaths": ["products.llm", "modules.llm-gateway", "modules.mock-llm", "modules.openai-adapter"],
     "dataOwnership": ["model routing configuration", "provider credentials"],
     "providers": [
       {"name": "mock-openai-compatible", "status": "bundled"},
+      {"name": "openai-adapter", "status": "bundled"},
       {"name": "vllm", "status": "external"},
       {"name": "openai-compatible-external", "status": "external"}
     ]

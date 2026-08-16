@@ -16,6 +16,7 @@ flowchart TB
     subgraph Providers["Provider trust zones"]
       MR["Memory adapter"]
       LR["LLM adapter/runtime"]
+      OA["OpenAI credential adapter"]
       XR["MCP runtime sandbox"]
     end
     subgraph Data["Data trust zones"]
@@ -26,6 +27,7 @@ flowchart TB
     ORC --> MEM & LLM & MCP
     MEM --> MR --> MD
     LLM --> LR
+    LLM --> OA --> CLOUD["OpenAI API"]
     MCP --> XR
     MCP --> XD
 ```
@@ -39,6 +41,9 @@ Kubernetes NetworkPolicy separates these zones even when they share a cluster. P
 3. The orchestrator applies model, memory, tool, cost, and residency policy.
 4. The memory gateway queries a selected memory provider; provider-specific identifiers do not escape the canonical response.
 5. The LLM gateway selects an allowed route and calls an OpenAI-compatible local or cloud adapter.
+   For OpenAI, it calls an internal ViewSense adapter using mTLS and a tenant-bound
+   `provider.invoke` token. That adapter alone exchanges the server-held API key with the pinned
+   OpenAI HTTPS API; callers cannot select the outbound host or provider model.
 6. Optional tool execution goes through the MCP gateway. The orchestrator never connects directly to an MCP server.
 7. The response is returned with request/trace IDs and usage metadata. Memory writes and audit events are idempotent side effects.
 
@@ -48,6 +53,8 @@ Kubernetes NetworkPolicy separates these zones even when they share a cluster. P
 - Retries are allowed only for operations documented as idempotent and are bounded with jitter.
 - Streaming responses are never transparently retried after bytes have been emitted.
 - Provider fallback must satisfy the same tenant policy, data residency, model capability, and safety class; otherwise fail closed.
+- OpenAI authentication, rate-limit, timeout, and malformed-response failures are normalized and
+  never include the upstream response body; no implicit fallback to the mock or another region occurs.
 - Memory failure may degrade to no-memory only when tenant policy explicitly permits it.
 - MCP failure never causes an unapproved alternate tool to execute.
 

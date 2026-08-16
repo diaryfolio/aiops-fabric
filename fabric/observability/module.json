@@ -4,10 +4,10 @@
   "metadata": {"name": "observability", "title": "Observability, audit, and SIEM routing"},
   "spec": {
     "maturity": "partial-reference",
-    "implementationPaths": ["src/viewsense_common/logging.py"],
+    "implementationPaths": ["src/viewsense_common/logging.py", "src/viewsense_governance/app.py"],
     "contractPaths": ["docs/design/high-level/60-enterprise/01-enterprise-integration-controls.md", "docs/design/high-level/40-ops/01-day2-operations-sre.md"],
     "helmPaths": [],
-    "dataOwnership": ["request telemetry", "runtime logs"],
+    "dataOwnership": ["request telemetry", "runtime logs", "payload-minimized execution evidence"],
     "providers": [
       {"name": "json-stdout", "status": "bundled"},
       {"name": "opentelemetry-collector", "status": "external"},

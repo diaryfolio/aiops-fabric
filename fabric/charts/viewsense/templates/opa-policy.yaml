@@ -1,0 +1,20 @@
+{{- if and .Values.products.policy.enabled (eq .Values.products.policy.product "opa-sidecar") }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: viewsense-opa-policy
+  labels:
+    {{- include "viewsense.labels" . | nindent 4 }}
+data:
+  provider.rego: |
+    package viewsense.provider
+
+    default admit := {"allow": false, "reasons": ["provider admission denied by default"]}
+
+    admit := {"allow": true, "reasons": []} if {
+      input.provider.status != "revoked"
+      input.request.data_classification in input.provider.data_classifications
+      some residency in input.request.allowed_residencies
+      residency in input.provider.residencies
+    }
+{{- end }}

@@ -25,6 +25,8 @@ set +a
 : "${VS_SMOKE_CLIENT_SECRET:?missing smoke secret}"
 : "${VS_MEMORY_DB_PASSWORD:?missing memory DB password}"
 : "${VS_REGISTRY_DB_PASSWORD:?missing registry DB password}"
+: "${VS_GOVERNANCE_DB_PASSWORD:?missing governance DB password}"
+: "${VS_AGENT_DB_PASSWORD:?missing agent DB password}"
 
 docker build --target runtime -t viewsense-core:dev "${repo_root}"
 if [[ "${context}" == k3d-* ]]; then
@@ -43,7 +45,7 @@ apply_secret() {
     --dry-run=client -o yaml | kubectl apply -f -
 }
 
-for service in identity gateway orchestrator ingestion llm-gateway mock-llm memory-gateway memory-postgres mcp-gateway mock-mcp smoke; do
+for service in identity gateway orchestrator ingestion llm-gateway mock-llm memory-gateway memory-postgres mcp-gateway mock-mcp governance agent-runtime smoke; do
   apply_secret "tls-${service}" \
     --from-file=ca.crt="${repo_root}/.viewsense/pki/${service}/ca.crt" \
     --from-file=tls.crt="${repo_root}/.viewsense/pki/${service}/tls.crt" \
@@ -68,16 +70,23 @@ apply_secret memory-db-credentials \
 apply_secret registry-db-credentials \
   --from-literal=password="${VS_REGISTRY_DB_PASSWORD}" \
   --from-literal=url="postgresql://viewsense_registry:${VS_REGISTRY_DB_PASSWORD}@registry-db:5432/viewsense_registry"
+apply_secret governance-db-credentials \
+  --from-literal=password="${VS_GOVERNANCE_DB_PASSWORD}" \
+  --from-literal=url="postgresql://viewsense_governance:${VS_GOVERNANCE_DB_PASSWORD}@governance-db:5432/viewsense_governance"
+apply_secret agent-db-credentials \
+  --from-literal=password="${VS_AGENT_DB_PASSWORD}" \
+  --from-literal=url="postgresql://viewsense_agent:${VS_AGENT_DB_PASSWORD}@agent-db:5432/viewsense_agent"
 
 kubectl apply -k "${repo_root}/deploy/kubernetes/base"
 kubectl -n "${namespace}" rollout status statefulset/memory-db --timeout=180s
 kubectl -n "${namespace}" rollout status statefulset/registry-db --timeout=180s
-for deployment in identity gateway orchestrator ingestion llm-gateway mock-llm memory-gateway memory-postgres mcp-gateway mock-mcp; do
+kubectl -n "${namespace}" rollout status statefulset/governance-db --timeout=180s
+kubectl -n "${namespace}" rollout status statefulset/agent-db --timeout=180s
+for deployment in identity gateway orchestrator ingestion llm-gateway mock-llm memory-gateway memory-postgres mcp-gateway mock-mcp governance agent-runtime; do
   # TLS keys, signing material, workload credentials, and the mutable development
-  # image are loaded at process start. Force each owned workload to consume them.
+  # image are loaded at process start. Restart and wait sequentially so the small
+  # development cluster never surges every service at the same time.
   kubectl -n "${namespace}" rollout restart "deployment/${deployment}"
-done
-for deployment in identity gateway orchestrator ingestion llm-gateway mock-llm memory-gateway memory-postgres mcp-gateway mock-mcp; do
   kubectl -n "${namespace}" rollout status "deployment/${deployment}" --timeout=180s
 done
 kubectl -n "${namespace}" get pods -o wide

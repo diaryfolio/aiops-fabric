@@ -40,7 +40,7 @@ services:
       - ./.viewsense/identity-signing.key:/run/viewsense/identity/signing.key:ro
       - ./.viewsense/clients.json:/run/viewsense/identity/clients.json:ro
     ports:
-      - "127.0.0.1:9444:8443"
+      - "127.0.0.1:${VS_IDENTITY_HOST_PORT:-9444}:8443"
     networks: [edge, control]
 
   gateway:
@@ -55,7 +55,7 @@ services:
       - ./.viewsense/pki/gateway:/run/viewsense/tls:ro
       - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
     ports:
-      - "127.0.0.1:9443:8443"
+      - "127.0.0.1:${VS_GATEWAY_HOST_PORT:-9443}:8443"
     networks: [edge, control]
 
   orchestrator:
@@ -170,6 +170,34 @@ services:
       - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
     networks: [control, mcp-provider, registry-data]
 
+  governance:
+    <<: *app
+    depends_on:
+      governance-db:
+        condition: service_healthy
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_governance.app
+      VS_DATABASE_URL: postgresql://viewsense_governance:${VS_GOVERNANCE_DB_PASSWORD:?run scripts/bootstrap-dev-pki.sh}@governance-db:5432/viewsense_governance
+    volumes:
+      - ./.viewsense/pki/governance:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    networks: [control, governance-data]
+
+  agent-runtime:
+    <<: *app
+    depends_on:
+      agent-db:
+        condition: service_healthy
+    environment:
+      <<: *common-env
+      VS_APP_MODULE: viewsense_agent_runtime.app
+      VS_DATABASE_URL: postgresql://viewsense_agent:${VS_AGENT_DB_PASSWORD:?run scripts/bootstrap-dev-pki.sh}@agent-db:5432/viewsense_agent
+    volumes:
+      - ./.viewsense/pki/agent-runtime:/run/viewsense/tls:ro
+      - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
+    networks: [control, agent-data]
+
   mock-mcp:
     <<: *app
     environment:
@@ -196,6 +224,38 @@ services:
       - registry-data:/var/lib/postgresql/data
     networks: [registry-data]
 
+  governance-db:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: viewsense_governance
+      POSTGRES_USER: viewsense_governance
+      POSTGRES_PASSWORD: ${VS_GOVERNANCE_DB_PASSWORD:?run scripts/bootstrap-dev-pki.sh}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U viewsense_governance -d viewsense_governance"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    volumes:
+      - governance-data:/var/lib/postgresql/data
+    networks: [governance-data]
+
+  agent-db:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: viewsense_agent
+      POSTGRES_USER: viewsense_agent
+      POSTGRES_PASSWORD: ${VS_AGENT_DB_PASSWORD:?run scripts/bootstrap-dev-pki.sh}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U viewsense_agent -d viewsense_agent"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    volumes:
+      - agent-data:/var/lib/postgresql/data
+    networks: [agent-data]
+
   smoke:
     <<: *app
     profiles: [test]
@@ -209,6 +269,8 @@ services:
       VS_INGESTION_URL: https://ingestion:8443
       VS_MEMORY_URL: https://memory-gateway:8443
       VS_MCP_URL: https://mcp-gateway:8443
+      VS_GOVERNANCE_URL: https://governance:8443
+      VS_AGENT_URL: https://agent-runtime:8443
     volumes:
       - ./.viewsense/pki/smoke:/run/viewsense/tls:ro
       - ./.viewsense/identity-signing.pub:/run/viewsense/identity/signing.pub:ro
@@ -226,7 +288,13 @@ networks:
     internal: true
   registry-data:
     internal: true
+  governance-data:
+    internal: true
+  agent-data:
+    internal: true
 
 volumes:
   memory-data: {}
   registry-data: {}
+  governance-data: {}
+  agent-data: {}

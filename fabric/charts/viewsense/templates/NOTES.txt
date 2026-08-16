@@ -4,8 +4,15 @@ Selected products:
   Identity: {{ .Values.products.identity.product }}
   LLM: {{ .Values.products.llm.product }} -> {{ .Values.products.llm.endpoint }}
   Memory: {{ .Values.products.memory.product }} -> {{ .Values.products.memory.endpoint }}
+  Agent runtime: {{ .Values.products.agentRuntime.product }} (enabled={{ .Values.products.agentRuntime.enabled }})
+  Policy: {{ .Values.products.policy.product }} (enabled={{ .Values.products.policy.enabled }})
+  Workload identity: {{ .Values.products.workloadIdentity.product }}
+  Observability: {{ .Values.products.observability.product }}
+  Workflow: {{ .Values.products.workflow.product }} (enabled={{ .Values.products.workflow.enabled }})
   MCP mock provider: {{ .Values.products.mcp.mockProviderEnabled }}
 
 The chart expects pre-existing per-workload TLS, identity, workload credential,
-and datastore credential Secrets. Development helpers create these for viewsense-dev.
+and datastore/provider credential Secrets. Development helpers create the bundled
+reference Secrets for viewsense-dev. Selected managed/external integrations require
+their documented upstream installation and conformance gate.
 Mocks and the development identity issuer are not production controls.

@@ -29,7 +29,7 @@ class ServiceClient:
         self.ca_file = required("VS_TLS_CA_FILE")
         self.cert_file = required("VS_TLS_CERT_FILE")
         self.key_file = required("VS_TLS_KEY_FILE")
-        self._tokens: dict[tuple[str, str], CachedToken] = {}
+        self._tokens: dict[tuple[str, ...], CachedToken] = {}
         self._lock = asyncio.Lock()
 
     def http(self, timeout: float = 20.0) -> httpx.AsyncClient:
@@ -37,8 +37,26 @@ class ServiceClient:
         context.load_cert_chain(self.cert_file, self.key_file)
         return httpx.AsyncClient(verify=context, timeout=timeout)
 
-    async def token(self, audience: str, scope: str) -> str:
-        key = (audience, scope)
+    async def token(
+        self,
+        audience: str,
+        scope: str,
+        *,
+        tenant_id: str | None = None,
+        subject: str | None = None,
+        purpose: str = "service-operation",
+        classification: str = "internal",
+        request_id: str | None = None,
+    ) -> str:
+        key = (
+            audience,
+            scope,
+            tenant_id or "",
+            subject or "",
+            purpose,
+            classification,
+            request_id or "",
+        )
         cached = self._tokens.get(key)
         if cached and cached.expires_at > time.time() + 15:
             return cached.value
@@ -47,14 +65,23 @@ class ServiceClient:
             if cached and cached.expires_at > time.time() + 15:
                 return cached.value
             async with self.http() as client:
+                data = {
+                    "grant_type": "client_credentials",
+                    "audience": audience,
+                    "scope": scope,
+                    "purpose": purpose,
+                    "classification": classification,
+                }
+                if tenant_id:
+                    data["tenant_id"] = tenant_id
+                if subject:
+                    data["subject"] = subject
+                if request_id:
+                    data["request_id"] = request_id
                 response = await client.post(
                     f"{self.identity_url}/oauth2/token",
                     auth=(self.client_id, self.client_secret),
-                    data={
-                        "grant_type": "client_credentials",
-                        "audience": audience,
-                        "scope": scope,
-                    },
+                    data=data,
                 )
                 response.raise_for_status()
                 payload = response.json()
@@ -70,15 +97,25 @@ class ServiceClient:
         audience: str,
         scope: str,
         tenant_id: str | None = None,
+        trust_envelope: Any | None = None,
         json: Any = None,
         timeout: float = 20.0,
     ) -> httpx.Response:
-        token = await self.token(audience, scope)
-        headers = {"Authorization": f"Bearer {token}"}
         request_id = request_id_context.get()
+        subject = getattr(trust_envelope, "subject", None)
+        purpose = getattr(trust_envelope, "purpose", "service-operation")
+        classification = getattr(trust_envelope, "classification", "internal")
+        token = await self.token(
+            audience,
+            scope,
+            tenant_id=tenant_id,
+            subject=subject,
+            purpose=purpose,
+            classification=classification,
+            request_id=request_id,
+        )
+        headers = {"Authorization": f"Bearer {token}"}
         if request_id:
             headers["X-Request-ID"] = request_id
-        if tenant_id:
-            headers["X-ViewSense-Tenant"] = tenant_id
         async with self.http(timeout=timeout) as client:
             return await client.request(method, url, headers=headers, json=json)

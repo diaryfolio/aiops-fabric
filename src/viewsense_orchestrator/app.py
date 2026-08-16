@@ -35,7 +35,7 @@ async def health() -> dict:
 
 @app.post("/v1/responses")
 async def create_response(body: ResponseRequest, request: Request) -> dict:
-    auth.from_request(request, "orchestrate.invoke")
+    principal = auth.from_request(request, "orchestrate.invoke")
     tenant_id = delegated_tenant(request)
     request_id = body.request_id or str(uuid.uuid4())
 
@@ -45,6 +45,7 @@ async def create_response(body: ResponseRequest, request: Request) -> dict:
         audience="memory-gateway",
         scope="memory.read",
         tenant_id=tenant_id,
+        trust_envelope=principal.trust_envelope,
         json={"owner_id": body.user_id, "query": body.input, "limit": 5},
     )
     search_response.raise_for_status()
@@ -67,6 +68,7 @@ async def create_response(body: ResponseRequest, request: Request) -> dict:
         audience="llm-gateway",
         scope="llm.invoke",
         tenant_id=tenant_id,
+        trust_envelope=principal.trust_envelope,
         json={"model": body.model, "messages": messages, "stream": False},
         timeout=55,
     )
@@ -81,6 +83,7 @@ async def create_response(body: ResponseRequest, request: Request) -> dict:
             audience="memory-gateway",
             scope="memory.write",
             tenant_id=tenant_id,
+            trust_envelope=principal.trust_envelope,
             json={
                 "owner_id": body.user_id,
                 "content": f"User: {body.input}\nAssistant: {output_text}",

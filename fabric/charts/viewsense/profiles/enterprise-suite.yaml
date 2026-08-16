@@ -1,0 +1,28 @@
+products:
+  identity:
+    product: keycloak-oidc
+    issuer: https://keycloak.enterprise.example/realms/viewsense
+    jwksUrl: https://keycloak.enterprise.example/realms/viewsense/protocol/openid-connect/certs
+    audience: viewsense
+    tenantClaim: tenant_id
+    scopeClaim: scope
+    # Replace with IdP/JWKS CIDRs or a CNI FQDN policy before installation.
+    externalEgress: []
+  agentRuntime:
+    enabled: true
+    product: builtin
+  policy:
+    enabled: true
+    product: opa-sidecar
+    endpoint: http://127.0.0.1:8181/v1/data/viewsense/provider/admit
+  workloadIdentity:
+    product: spire
+    spiffe:
+      trustDomain: enterprise.example
+      socketPath: unix:///spiffe-workload-api/spire-agent.sock
+  workflow:
+    enabled: true
+    product: n8n
+  observability:
+    product: otel-collector
+    otlpEndpoint: http://otel-collector.observability.svc:4317

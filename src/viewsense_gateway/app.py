@@ -1,16 +1,21 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import uuid
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from viewsense_common.auth import TokenVerifier
+from viewsense_common.auth import OIDCTokenVerifier, TokenVerifier
 from viewsense_common.client import ServiceClient
 
 app = FastAPI(title="ViewSense Edge API", version="1.0.0")
-auth = TokenVerifier("gateway")
+auth = (
+    OIDCTokenVerifier()
+    if os.getenv("VS_EXTERNAL_OIDC_JWKS_URL")
+    else TokenVerifier("gateway")
+)
 client = ServiceClient()
 ORCHESTRATOR_URL = os.getenv("VS_ORCHESTRATOR_URL", "https://orchestrator:8443")
 
@@ -22,7 +27,10 @@ async def health() -> dict:
 
 @app.post("/v1/responses")
 async def responses(request: Request) -> JSONResponse:
-    principal = auth.from_request(request, "api.invoke")
+    if isinstance(auth, OIDCTokenVerifier):
+        principal = await asyncio.to_thread(auth.from_request, request, "api.invoke")
+    else:
+        principal = auth.from_request(request, "api.invoke")
     if not principal.tenant_id:
         raise HTTPException(403, "tenant-bound identity required")
     payload = await request.json()
@@ -34,6 +42,7 @@ async def responses(request: Request) -> JSONResponse:
         audience="orchestrator",
         scope="orchestrate.invoke",
         tenant_id=principal.tenant_id,
+        trust_envelope=principal.trust_envelope,
         json=payload,
         timeout=60,
     )

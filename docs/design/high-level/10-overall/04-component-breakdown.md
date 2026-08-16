@@ -10,11 +10,18 @@ Owns a bounded request state machine: policy evaluation, context assembly, infer
 
 ## LLM gateway
 
-Normalizes model IDs, capabilities, errors, token usage, routing, deadlines, and provider credentials. Local vLLM/Ollama and cloud OpenAI/Azure/other endpoints are adapters. The gateway must not store conversation memory.
+Normalizes model IDs, capabilities, errors, token usage, routing, and deadlines. Local vLLM/Ollama
+and cloud OpenAI/Azure/other endpoints are adapters. Provider credentials belong only to the owning
+adapter, not the LLM gateway. The gateway must not store conversation memory.
+
+The bundled OpenAI adapter translates the internal mTLS/scoped-token request into an OpenAI Bearer
+request. It owns the API key, exact upstream URL, configured model, outbound field minimization,
+timeout, and safe error translation. It owns no memory: retrieved memory reaches it only as bounded
+request context assembled by the orchestrator.
 
 ## Memory gateway and providers
 
-The gateway enforces tenant/purpose policy and exposes canonical records. A provider implements storage, embedding, retrieval, filtering, retention, and export. The reference provider uses PostgreSQL/pgvector; Mem0 is a future adapter, not a replacement for the stable gateway.
+The gateway enforces tenant/purpose policy and exposes canonical records. A provider implements storage, embedding, retrieval, filtering, retention, and export. The reference provider uses PostgreSQL/pgvector. The Mem0 OSS/Platform adapter is executable and keeps its API key, tenant/owner pseudonymization, upstream paths, and response normalization inside the provider boundary; Mem0 remains separate from the stable gateway.
 
 Memory is split conceptually into:
 
@@ -34,11 +41,30 @@ Durable workflow engines (Temporal, Argo Workflows, n8n, or an enterprise produc
 
 ## Agent runtime and ingestion
 
-The online agent runtime is a durable, bounded state machine that uses only the LLM, memory, policy, workflow, and MCP APIs. It owns run/checkpoint state but no provider data. The ingestion service owns document ingestion jobs and deterministic chunking; parsing, enrichment, embeddings, and vector persistence remain replaceable stages. See the dedicated agentic design for tool loops, approvals, ingestion poisoning controls, and workflow-provider selection.
+The bundled online agent runtime is a persistent bounded state machine. It implements idempotent run
+creation, optimistic versions, step/cost/tool budgets, checkpoint, approval/rejection, cancellation,
+terminal states, and ordered event history in its own PostgreSQL database. It owns run/checkpoint
+state but no provider data. Automatic plan/model/tool workers and external workflow adapters are not
+yet implemented. The ingestion service owns document ingestion jobs and deterministic chunking;
+parsing, enrichment, embeddings, and vector persistence remain replaceable stages.
 
 ## Identity and policy
 
-Human identity federates through enterprise OIDC. Workload identity uses SPIFFE/SPIRE, mesh identity, or equivalent. An external policy decision point such as OPA can evaluate tenant, classification, model, memory purpose, tool side effects, and residency. The repository's issuer is development-only.
+Human identity federates through enterprise OIDC; the edge verifier supports generic OIDC and
+Keycloak-compatible issuer/JWKS/claim mapping. Workload identity uses SPIFFE/SPIRE, mesh identity,
+or equivalent. SPIRE is installed as a platform dependency and ViewSense consumes SVIDs through an
+SDS-capable proxy/mesh rather than embedding SPIRE into application code. Provider admission uses
+the built-in checks or a fail-closed OPA decision API; the chart can place OPA beside governance.
+The repository's issuer and static PKI are development-only.
+
+## Governance and evidence
+
+The governance API owns provider passports, evaluation evidence, admission state, and safe
+execution evidence. Providers cannot mark themselves admitted, and callers cannot choose an
+evidence producer: both transitions are derived or enforced server-side. Its database is owned
+and unreachable from other applications. Production policy engines, signature/transparency
+verification, immutable evidence export, retention, and legal hold remain separate adapters and
+maturity gates.
 
 ## Observability and audit
 
@@ -48,10 +74,12 @@ All components emit OpenTelemetry metrics/traces/log correlation. Security audit
 
 | Capability | Reference slice | Replaceable examples |
 |---|---|---|
-| LLM provider | deterministic mock | vLLM, Ollama, OpenAI, Azure OpenAI |
-| memory provider | PostgreSQL + pgvector | Mem0 adapter, Qdrant adapter, managed vector service |
+| LLM provider | deterministic mock; OpenAI credential adapter | vLLM, Ollama, Azure OpenAI |
+| memory provider | PostgreSQL + pgvector; Mem0 adapter | Qdrant adapter, managed vector service |
+| agent runtime | persistent bounded state machine | LangGraph-compatible adapter |
 | MCP provider | echo test server | certified enterprise MCP servers |
 | identity | local RSA token issuer | enterprise IdP + workload identity |
+| governance/evidence | owned PostgreSQL reference | external policy and immutable evidence sinks |
 | deployment | Kustomize development base | Helm/GitOps environment overlays |
 
 ## Repository module boundary

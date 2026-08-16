@@ -38,7 +38,8 @@ The model proposes; deterministic policy authorizes; the MCP gateway executes. R
 - `GET /v1/agent-runs/{id}` reads current state and safe event summaries.
 - `POST /v1/agent-runs/{id}:resume` supplies an approval/edited action or external signal.
 - `POST /v1/agent-runs/{id}:cancel` requests cooperative cancellation.
-- `GET /v1/agent-runs/{id}/events` streams versioned state events over SSE.
+- `GET /v1/agent-runs/{id}/events` returns ordered versioned state events; SSE is a compatible
+  future transport.
 
 Implementations such as a built-in state machine or LangGraph remain behind this contract. Durable state is mandatory for background runs and approval pauses. Side effects use idempotency keys and are recorded before/after execution to prevent replay after recovery.
 
@@ -52,6 +53,13 @@ Implementations such as a built-in state machine or LangGraph remain behind this
 - cancellation, checkpoint, retry, and compensation semantics per step;
 - output/evidence evaluation before committing memory or side effects;
 - complete model-route, policy-decision, approval, and MCP invocation audit.
+
+The bundled reference now persists tenant-bound state transitions and approval actors in an ordered
+run-event table and exposes them through the Agent API. The separate governance API implements the
+payload-minimized Evidence Event v1 boundary. Exporting every agent event transactionally to that
+evidence boundary, SSE streaming, autonomous plan/tool workers, and side-effect replay protection
+remain next slices. Prompts, completions, memory, arguments, results, credentials, and personal data
+are excluded from baseline events.
 
 ## Governed ingestion pipeline
 
