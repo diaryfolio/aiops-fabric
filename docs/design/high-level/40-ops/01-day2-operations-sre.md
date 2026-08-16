@@ -1,8 +1,23 @@
 # ViewSense Day-2 Operations and SRE
 
-## Observability contract
+## Observability: current and target
 
-Every hop emits W3C trace context and structured telemetry with service, environment, request/trace IDs, tenant pseudonym, route/provider ID, operation, outcome, duration, and retry count. AI metrics include time to first token, tokens/sec, input/output tokens, context size, retrieval latency/hit count, tool calls/timeouts, and policy decisions. Prompt, completion, memory, and tool bodies are excluded unless a classified diagnostic policy explicitly enables them.
+```mermaid
+flowchart LR
+    Apps["Current apps"] --> JSON["JSON stdout<br/>request ID, tenant, principal, status, duration"]
+    JSON --> Collector["Enterprise collector<br/>configuration-ready"]
+    Collector --> Elastic["Elastic"]
+    Collector --> Splunk["Splunk"]
+    Collector --> Other["Other SIEM/log store"]
+    Apps -. "planned" .-> Metrics["OpenMetrics / AI metrics"]
+    Apps -. "planned" .-> Traces["propagated W3C traces / OTLP"]
+```
+
+The implemented middleware emits one JSON object per request and propagates `X-Request-ID`.
+It records an inbound `traceparent` value but the service client does not yet forward it. The
+reference does not expose OpenMetrics or native OTLP. Production requires propagated traces,
+tenant pseudonymization, route/provider and retry fields, RED/USE plus AI metrics, and a collector.
+Prompt, completion, memory, and tool bodies remain excluded from baseline logs.
 
 ## SLOs and dependency budgets
 
@@ -53,7 +68,11 @@ Review GPU saturation, batching, KV-cache pressure, database index health, queue
 
 No production provider is enabled until it has ownership/on-call, dashboard and alerts, SLO, capacity test, failure-mode test, security review, data-flow record, backup/restore where stateful, credential rotation, and rollback/disable instructions.
 
-Provider readiness is represented by an expiring passport plus evaluation/admission records. Operations alert before passport, certificate, evidence, or evaluation expiry and automatically prevent new routing after revocation or expiry. The governance database is backed up and restored before dependent provider catalogs; production evidence is also exported to an independently administered immutable sink.
+Provider readiness is represented by an expiring passport plus evaluation/admission records. The
+reference governance API evaluates admission, but gateways do not yet consult admission state when
+routing and no expiry alert controller is shipped. Production must add that reconciliation/enforcement
+loop, alert before expiry, block revoked/expired routes, back up governance state, and export evidence
+to an independently administered immutable sink.
 
 Database-owning services use bounded startup retries because Kubernetes readiness ordering does not
 guarantee that a newly reachable database is accepting connections. Exhaustion fails startup and is
@@ -67,3 +86,16 @@ Product readiness is read from `fabric/product-catalog.json`: `validated` has re
 `configuration-ready` has an executable ViewSense integration boundary but needs the selected
 environment, and `planned` is declaration-only. Render every profile with `make profile-check`.
 Never report a profile as installed merely because Helm accepts its values.
+
+## Operational control loop
+
+```mermaid
+flowchart LR
+    Observe["observe SLO/security signals"] --> Decide["policy + provider admission decision"]
+    Decide --> Change["versioned configuration change"]
+    Change --> Verify["synthetic + negative + provider tests"]
+    Verify -->|pass| Promote["promote"]
+    Verify -->|fail| Rollback["rollback / disable route"]
+    Promote --> Observe
+    Rollback --> Observe
+```

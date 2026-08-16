@@ -4,6 +4,29 @@
 
 Kubernetes is the deployment contract. The portable base uses Deployments, StatefulSets, Services, Secrets, PVCs, probes, resource controls, service accounts, and NetworkPolicy. EKS, GKE, AKS, OpenShift, and bare-metal differences belong in overlays. Docker Compose mirrors process/network boundaries only and is not a production topology.
 
+```mermaid
+flowchart TB
+    subgraph Namespace["viewsense-dev reference namespace"]
+      subgraph Stateless["Deployments"]
+        Edge["gateway"]
+        Control["orchestrator + gateways"]
+        Providers["mock/provider adapters"]
+        Admin["governance + ingestion + agent runtime"]
+      end
+      subgraph Stateful["Single-replica development StatefulSets"]
+        MemoryDB[("memory-db")]
+        RegistryDB[("registry-db")]
+        GovernanceDB[("governance-db")]
+        AgentDB[("agent-db")]
+      end
+      Policy["default-deny + explicit NetworkPolicy"]
+      Secrets["generated development PKI/credentials"]
+    end
+    Secrets --> Stateless
+    Stateless --> Stateful
+    Policy -. "constrains declared paths when CNI enforces policy" .-> Stateless
+```
+
 ## Namespace and cluster patterns
 
 | Profile | Isolation | Suitable for |
@@ -62,6 +85,21 @@ overlay permits public IPv4 HTTPS while excluding private, loopback, link-local,
 ranges. Production must replace that broad rule with an egress proxy or CNI FQDN policy restricted
 to `api.openai.com`, plus DNS/proxy failure tests. `make openai-disable` restores the mock route and
 deletes the development credential Secret and adapter resources.
+
+```mermaid
+flowchart LR
+    Values["Helm values/profile"] --> Render["ViewSense workloads"]
+    Render --> Bundled["bundled services and databases"]
+    Render --> Adapter["selected ViewSense adapter"]
+    Render -. "intent only" .-> Managed["Keycloak / SPIRE / Collector operator"]
+    Render -. "planned adapter" .-> Workflow["n8n / Temporal / Argo"]
+    Adapter --> External["enterprise-managed upstream product"]
+```
+
+The SPIRE socket/trust-domain and observability endpoint fields are reserved integration intent;
+the current chart does not mount an SVID/SDS workload API or configure native application OTLP
+export. External OpenAI and Mem0 adapters are the executable provider integrations. Generic
+vLLM/Ollama and workflow selections require adapters that have not shipped.
 
 ## Sizing method
 

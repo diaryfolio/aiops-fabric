@@ -1,6 +1,23 @@
 # ViewSense High-Level Design
 
-This directory is the canonical architecture set for ViewSense. Read `design_01.md` first, then the numbered documents. The design distinguishes non-negotiable contracts from reference implementation choices so a development convenience is never mistaken for a production control.
+This directory is the canonical architecture set for ViewSense. Read the index, then the executable
+conformance map before using a target-state document as an implementation claim.
+
+```mermaid
+flowchart LR
+    Index["design_01.md<br/>decision and boundaries"] --> Conformance["00-implementation-conformance.md<br/>what actually ships"]
+    Conformance --> Overall["10-overall<br/>contracts and ownership"]
+    Conformance --> Deployment["20-deployment"]
+    Conformance --> Security["30-security"]
+    Conformance --> Operations["40-ops"]
+    Conformance --> Enterprise["60-enterprise"]
+    Conformance --> Agentic["70-agentic"]
+    Conformance --> Future["80-future"]
+    Overall & Deployment & Security & Operations & Enterprise & Agentic --> Roadmap["50-roadmap<br/>promotion gates"]
+```
+
+- [Architecture index](design_01.md)
+- [Implementation conformance](00-implementation-conformance.md)
 
 Architecture changes are major changes under `docs/prompts/governance/major-change-policy.md`. They require synchronized code, contract, security, deployment, and operations updates.
 

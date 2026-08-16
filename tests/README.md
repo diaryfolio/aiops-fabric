@@ -609,8 +609,8 @@ request may produce an internal Trust Envelope.
 
 ### SPIRE
 
-The profile records workload-identity intent but does not install SPIRE. After installing the pinned
-upstream hardened charts, validate:
+The profile records planned workload-identity intent but does not install SPIRE, mount its socket,
+or consume SVIDs. After a production overlay implements those pieces, validate:
 
 ```bash
 kubectl get pods -A -l app.kubernetes.io/name=spire-server
@@ -627,8 +627,9 @@ SDS proxy/mesh. mTLS identity does not replace audience/scoped authorization.
 ### Workflows and observability
 
 n8n, Temporal, and Argo selections currently record planned integration intent; installation is not
-a workflow-adapter test. OpenTelemetry selection similarly identifies the expected collector. JSON
-stdout is the validated baseline. Send logs through the chosen collector to Elastic/Splunk and prove
+a workflow-adapter test. OpenTelemetry selection similarly identifies the expected collector, but
+the configured `otlpEndpoint` is not consumed by current application code. JSON stdout is the
+validated baseline. Send logs through the chosen collector to Elastic/Splunk and prove
 single-line JSON parsing, request correlation, Kubernetes metadata enrichment, redaction, backpressure,
 and that tokens/prompts/memory/tool payloads are absent.
 
@@ -668,6 +669,6 @@ kubectl logs -n viewsense-dev deployment/memory-postgres --tail=20
 | Mem0 | adapter normalization/security unit and Helm profile | live OSS/Platform conformance, backup/export, outage |
 | OPA | fail-closed code path and sidecar profile rendering | live allow/deny/outage and bundle lifecycle |
 | OIDC/Keycloak | verifier boundary and profile rendering | realm/claims, MFA/session/key rotation/outage |
-| SPIRE | topology/profile/preflight documentation | live SVID/SDS rotation and spoof/expiry denial |
+| SPIRE | planned topology/profile documentation | SVID/SDS consumption plus rotation and spoof/expiry denial |
 | workflows | catalog/profile intent only | adapter contract; no provider is validated yet |
 | JSON logs | runtime and smoke inspection | OTel/Elastic/Splunk routing, alert and backpressure |

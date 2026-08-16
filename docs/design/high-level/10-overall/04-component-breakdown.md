@@ -1,18 +1,41 @@
 # ViewSense Component and Ownership Model
 
+```mermaid
+flowchart TB
+    Edge["Edge: authenticate + validate + delegate"] --> Control["Control: orchestrate + select configured gateways"]
+    Control --> LLM["LLM boundary"]
+    Control --> Memory["Memory boundary"]
+    Admin["Admin/test clients"] --> MCP["MCP registry + tool-provider boundary"]
+    Admin --> Governance["Governance + evidence"]
+    Admin --> Agent["Agent lifecycle"]
+    Admin --> Ingestion["Synchronous ingestion"]
+    Memory --> MemoryOwner[("Memory provider owns records/vectors")]
+    MCP --> RegistryOwner[("MCP gateway owns registry")]
+    Governance --> GovernanceOwner[("Governance owns passports/evidence")]
+    Agent --> AgentOwner[("Agent runtime owns run state")]
+    Ingestion --> Memory
+```
+
 ## Edge API
 
-Owns external authentication integration, tenant derivation, schema validation, rate limits, and public compatibility. It does not select provider URLs, hold provider credentials, or implement agent loops.
+The implemented gateway validates development or external OIDC tokens, derives tenant context,
+validates the public request schema, and delegates to the orchestrator. Enterprise rate limits,
+quotas, WAF, and broad API compatibility are responsibilities of the target API-management layer.
+The gateway does not select provider URLs, hold provider credentials, or implement agent loops.
 
 ## Request orchestrator
 
-Owns a bounded request state machine: policy evaluation, context assembly, inference calls, optional approved tools, and response assembly. Long-running durable business processes belong behind a workflow-provider API, not inside request handlers.
+The implemented orchestrator retrieves owner-bound memory, delimits it as context, invokes the LLM
+gateway, optionally writes the interaction, and assembles the response. Policy-based routing,
+approved tool calls, and cost/residency decisions are target extensions. Long-running durable
+business processes belong behind a workflow-provider API, not inside request handlers.
 
 ## LLM gateway
 
-Normalizes model IDs, capabilities, errors, token usage, routing, and deadlines. Local vLLM/Ollama
-and cloud OpenAI/Azure/other endpoints are adapters. Provider credentials belong only to the owning
-adapter, not the LLM gateway. The gateway must not store conversation memory.
+The implemented LLM gateway is a stateless, deployment-configured proxy to one adapter. The mock
+and OpenAI adapters are executable. Capability discovery, aliases, multi-route policy, usage
+normalization, and native vLLM/Ollama/Azure adapters are planned. Provider credentials belong only
+to the owning adapter, not the LLM gateway. The gateway stores no conversation memory.
 
 The bundled OpenAI adapter translates the internal mTLS/scoped-token request into an OpenAI Bearer
 request. It owns the API key, exact upstream URL, configured model, outbound field minimization,
@@ -21,7 +44,11 @@ request context assembled by the orchestrator.
 
 ## Memory gateway and providers
 
-The gateway enforces tenant/purpose policy and exposes canonical records. A provider implements storage, embedding, retrieval, filtering, retention, and export. The reference provider uses PostgreSQL/pgvector. The Mem0 OSS/Platform adapter is executable and keeps its API key, tenant/owner pseudonymization, upstream paths, and response normalization inside the provider boundary; Mem0 remains separate from the stable gateway.
+The gateway verifies tenant delegation and exposes canonical create/search records. Rich
+purpose/classification/retention policy is planned. The reference provider uses PostgreSQL/pgvector
+with deterministic development embeddings. The executable Mem0 adapter keeps its API key,
+tenant/owner pseudonymization, upstream paths, and response normalization inside the provider
+boundary; live conformance requires a selected Mem0 installation.
 
 Memory is split conceptually into:
 
@@ -33,7 +60,11 @@ These have different retention and authorization and must not be merged into one
 
 ## MCP gateway and runtime
 
-The gateway owns the approved server catalog, capability metadata, policy checks, invocation audit, timeouts, and egress allow-list. MCP servers run as untrusted provider workloads with dedicated identities and network/credential boundaries. Registration never grants execution automatically; production adds certification and approval state.
+The implemented gateway owns a PostgreSQL server registry, exact HTTPS host allow-list, scoped
+registration/invocation APIs, and a ViewSense-owned `/v1/tools/call` provider contract. The mock
+provider proves isolation and invocation. Native MCP Streamable HTTP translation, certification,
+per-tool policy, approval state, and immutable invocation audit are planned; the current registry
+entry plus `enabled` flag is not production certification.
 
 ## Workflow provider (planned)
 
@@ -51,9 +82,9 @@ parsing, enrichment, embeddings, and vector persistence remain replaceable stage
 ## Identity and policy
 
 Human identity federates through enterprise OIDC; the edge verifier supports generic OIDC and
-Keycloak-compatible issuer/JWKS/claim mapping. Workload identity uses SPIFFE/SPIRE, mesh identity,
-or equivalent. SPIRE is installed as a platform dependency and ViewSense consumes SVIDs through an
-SDS-capable proxy/mesh rather than embedding SPIRE into application code. Provider admission uses
+Keycloak-compatible issuer/JWKS/claim mapping. Target workload identity uses SPIFFE/SPIRE, mesh
+identity, or equivalent. The planned SPIRE integration consumes SVIDs through an SDS-capable
+proxy/mesh rather than embedding SPIRE into application code. Provider admission uses
 the built-in checks or a fail-closed OPA decision API; the chart can place OPA beside governance.
 The repository's issuer and static PKI are development-only.
 
@@ -68,16 +99,20 @@ maturity gates.
 
 ## Observability and audit
 
-All components emit OpenTelemetry metrics/traces/log correlation. Security audit records are append-only, payload-minimized, and separate from troubleshooting logs. Audit pipeline failure follows tenant policy and can fail closed for regulated tool/model operations.
+All application components emit JSON request/runtime logs and propagate `X-Request-ID`. Inbound
+`traceparent` is recorded but not propagated across clients. Native OpenMetrics, distributed tracing,
+OTLP export, audit delivery acknowledgement, and regulated fail-closed delivery are planned.
+Governance evidence is payload-minimized and append-only at its API, but PostgreSQL is not an
+immutable audit sink.
 
 ## Reference versus replaceable choices
 
 | Capability | Reference slice | Replaceable examples |
 |---|---|---|
-| LLM provider | deterministic mock; OpenAI credential adapter | vLLM, Ollama, Azure OpenAI |
+| LLM provider | deterministic mock; OpenAI credential adapter | planned vLLM, Ollama, Azure OpenAI adapters |
 | memory provider | PostgreSQL + pgvector; Mem0 adapter | Qdrant adapter, managed vector service |
 | agent runtime | persistent bounded state machine | LangGraph-compatible adapter |
-| MCP provider | echo test server | certified enterprise MCP servers |
+| MCP provider | ViewSense echo tool provider | planned native/certified enterprise MCP adapter |
 | identity | local RSA token issuer | enterprise IdP + workload identity |
 | governance/evidence | owned PostgreSQL reference | external policy and immutable evidence sinks |
 | deployment | Kustomize development base | Helm/GitOps environment overlays |

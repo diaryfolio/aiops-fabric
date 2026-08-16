@@ -10,7 +10,7 @@
     "dataOwnership": ["synchronous ingestion request state"],
     "providers": [
       {"name": "builtin-deterministic", "status": "bundled"},
-      {"name": "unstructured-compatible-external", "status": "external"}
+      {"name": "unstructured-compatible-external", "status": "planned"}
     ]
   }
 }

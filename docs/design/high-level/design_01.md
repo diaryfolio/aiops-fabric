@@ -12,6 +12,10 @@ Product packaging uses four explicit modes: `bundled`, `adapter`, `managed-depen
 its upstream product is separate; a managed dependency is installed/operated at platform scope; an
 external product is reached through an API. Product selection never implies product installation.
 
+Implementation truth is maintained in
+[Implementation Conformance](00-implementation-conformance.md). Target-state requirements in this
+design are not evidence that a capability is deployed.
+
 ## System boundaries
 
 | Plane | Responsibility | Must not own |
@@ -23,7 +27,7 @@ external product is reached through an API. Product selection never implies prod
 | Security/operations | identity, policy decisions, secrets, telemetry, audit | business workflow semantics |
 | Governance/evidence | provider passports, evaluations, admissions, safe lineage events | provider payload data or execution credentials |
 
-## Mandatory invariants
+## Mandatory target invariants
 
 1. All capabilities have versioned network contracts and machine-readable schemas.
 2. Each stateful domain owns its database; other domains use its API.
@@ -31,7 +35,9 @@ external product is reached through an API. Product selection never implies prod
 4. Provider selection is configuration/policy, never compiled into a caller.
 5. An adapter must pass the same contract suite before it can replace another provider.
 6. Kubernetes is the canonical packaging model; local Compose must preserve the same service boundaries.
-7. A provider failure is contained by deadlines, bounded retries, circuit breaking, and no implicit fallback across data-residency classes.
+7. A provider failure is contained by deadlines, bounded retries, circuit breaking, and no implicit
+   fallback across data-residency classes. The reference implements bounded client timeouts and no
+   implicit fallback; retry/circuit-breaker policy remains a production integration.
 
 ## Reference request path
 
@@ -60,18 +66,19 @@ sequenceDiagram
 
 ## Design set
 
-1. [Objective and principles](10-overall/01-objective-principles.md)
-2. [Runtime topology and flows](10-overall/02-runtime-topology-flow.md)
-3. [API and integration standards](10-overall/03-api-integration-standards.md)
-4. [Component and ownership model](10-overall/04-component-breakdown.md)
-5. [Operations baseline](10-overall/05-operations-and-roadmap.md)
-6. [Kubernetes deployment and sizing](20-deployment/01-deployment-topology-sizing.md)
-7. [Zero-trust security model](30-security/01-zero-trust.md)
-8. [Day-2 operations](40-ops/01-day2-operations-sre.md)
-9. [Roadmap and maturity](50-roadmap/01-roadmap-maturity.md)
-10. [Enterprise integration and control matrix](60-enterprise/01-enterprise-integration-controls.md)
-11. [Agent runtime, ingestion, and workflow design](70-agentic/01-agent-runtime-ingestion-workflows.md)
-12. [Sovereign control and evidence fabric](80-future/01-sovereign-control-evidence-fabric.md)
+1. [Implementation conformance](00-implementation-conformance.md)
+2. [Objective and principles](10-overall/01-objective-principles.md)
+3. [Runtime topology and flows](10-overall/02-runtime-topology-flow.md)
+4. [API and integration standards](10-overall/03-api-integration-standards.md)
+5. [Component and ownership model](10-overall/04-component-breakdown.md)
+6. [Operations baseline](10-overall/05-operations-and-roadmap.md)
+7. [Kubernetes deployment and sizing](20-deployment/01-deployment-topology-sizing.md)
+8. [Zero-trust security model](30-security/01-zero-trust.md)
+9. [Day-2 operations](40-ops/01-day2-operations-sre.md)
+10. [Roadmap and maturity](50-roadmap/01-roadmap-maturity.md)
+11. [Enterprise integration and control matrix](60-enterprise/01-enterprise-integration-controls.md)
+12. [Agent runtime, ingestion, and workflow design](70-agentic/01-agent-runtime-ingestion-workflows.md)
+13. [Sovereign control and evidence fabric](80-future/01-sovereign-control-evidence-fabric.md)
 
 ## Implemented reference slice
 

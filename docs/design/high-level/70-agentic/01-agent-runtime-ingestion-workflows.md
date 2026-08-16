@@ -10,27 +10,46 @@ ViewSense treats “agentic” as a governed execution capability, not permissio
 
 All three use APIs; none can directly read another service's database or receive all provider credentials.
 
-## Online agent state machine
+## Implemented agent lifecycle
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Received
-    Received --> PolicyChecked
-    PolicyChecked --> ContextRetrieved
-    ContextRetrieved --> Planned
-    Planned --> ApprovalPending: consequential action
-    ApprovalPending --> Acting: approved or edited
-    ApprovalPending --> Cancelled: rejected or expired
-    Planned --> Acting: read-only approved tool
-    Acting --> Observed
-    Observed --> Evaluated
-    Evaluated --> Planned: more work and budget remains
-    Evaluated --> Committing: goal satisfied
-    Committing --> Completed
-    Planned --> Failed: step/deadline budget exhausted
+    [*] --> received: create + idempotency key
+    received --> running: start
+    running --> running: checkpoint
+    running --> approval_pending: request_approval
+    approval_pending --> running: approve (agent.approve)
+    approval_pending --> rejected: reject (agent.approve)
+    running --> completed: complete
+    running --> failed: fail
+    received --> cancelled: cancel
+    running --> cancelled: cancel
+    approval_pending --> cancelled: cancel
 ```
 
-The model proposes; deterministic policy authorizes; the MCP gateway executes. Run state includes tenant, subject, objective, immutable policy/config/model versions, current step, observations, token/tool/time/cost budgets, pending approvals, and checkpoint version. Provider credentials and raw long-term memory do not belong in agent state.
+The shipped runtime is a durable lifecycle kernel operated through explicit API actions. It does not
+call a model, retrieve memory, produce a plan, or invoke MCP. It persists tenant, creator, objective,
+profile, state, optimistic version, step count, configured step/tool/cost ceilings, and safe ordered
+events. Provider credentials and raw long-term memory do not belong in agent state.
+
+## Target autonomous worker
+
+```mermaid
+flowchart LR
+    Run["durable run"] --> Policy["policy check"]
+    Policy --> Context["memory retrieval"]
+    Context --> Plan["model proposes plan"]
+    Plan --> Decision{"deterministic tool policy"}
+    Decision -->|"approval required"| Human["human approval"]
+    Decision -->|"allowed read"| MCP["MCP gateway"]
+    Human --> MCP
+    MCP --> Observe["untrusted observation"]
+    Observe --> Evaluate["evaluate + budget"]
+    Evaluate -->|"continue"| Plan
+    Evaluate -->|"complete"| Commit["evidence + bounded memory write"]
+```
+
+This worker loop is planned; its diagram is an authorization model, not deployed behavior.
 
 ### Agent API contract
 
@@ -61,7 +80,7 @@ evidence boundary, SSE streaming, autonomous plan/tool workers, and side-effect 
 remain next slices. Prompts, completions, memory, arguments, results, credentials, and personal data
 are excluded from baseline events.
 
-## Governed ingestion pipeline
+## Target governed ingestion pipeline
 
 ```mermaid
 flowchart LR
@@ -89,11 +108,25 @@ AI-assisted enrichment may add contextual prefixes, summaries, entities, questio
 - events describe stage progress and dead-letter items; large artifacts use object references, not event payloads.
 - re-ingestion uses content hashes and source versions to deduplicate and tombstone superseded chunks.
 
-The current executable slice exposes synchronous `POST /v1/documents:ingest` with deterministic paragraph-aware hard-limit/overlap chunking and writes only through the memory API. Durable jobs, parsers/OCR, embedding gateway, enrichment, evaluation, quarantine, and publish phases are the next implementation slice.
+The current executable slice is smaller:
 
-## Workflow provider boundary
+```mermaid
+flowchart LR
+    Request["POST /v1/documents:ingest"] --> Chunk["paragraph + hard limit + overlap"]
+    Chunk --> Loop["one canonical memory write per chunk"]
+    Loop --> Result["document ID + chunk count + memory IDs"]
+```
 
-The workflow gateway exposes versioned start/status/signal/cancel APIs and CloudEvents. Provider adapters translate these into n8n workflows, Temporal workflows, Argo Workflows, or another engine. The agent runtime can request a workflow, and a workflow can request an agent run, but callbacks use signed correlation resources to prevent recursive/unbounded execution.
+It is synchronous and writes only through the memory API. Durable jobs, parsers/OCR, malware scan,
+classification/redaction, embedding gateway, enrichment, evaluation, quarantine, publish, source
+artifact retention, and re-ingestion/tombstoning are planned.
+
+## Planned workflow provider boundary
+
+The target workflow gateway exposes versioned start/status/signal/cancel APIs and CloudEvents.
+Provider adapters would translate these into n8n, Temporal, Argo Workflows, or another engine. No
+workflow gateway, adapter, or callback implementation ships today; Helm workflow values record
+selection intent only.
 
 ### When to use what
 
@@ -113,14 +146,14 @@ n8n is valuable because of its connectors, AI/tool nodes, and human-review patte
 |---|---|---|
 | edge/API management | OpenAPI, OIDC, quotas, WAF | enterprise gateway/ingress |
 | identity/policy/secrets | OIDC/JWKS, workload identity, policy API | enterprise IdP, SPIFFE/mesh, OPA, Vault |
-| model gateway/inference | OpenAI-compatible plus capabilities | vLLM/Ollama/local or approved cloud models |
+| model gateway/inference | OpenAI-compatible plus capabilities | mock/OpenAI now; vLLM/Ollama adapters planned |
 | embeddings/reranking | provider-neutral embedding/rerank APIs | local sentence-transformer or cloud adapter |
 | memory/RAG | canonical memory, export/import, filters | PostgreSQL/pgvector, Mem0, Qdrant-class adapter |
 | ingestion | parse/OCR/chunk/enrich/evaluate contracts | built-in workers or Unstructured-class adapter |
 | object/catalog data | S3-compatible artifacts plus governed metadata | enterprise object store and catalog |
 | agent runtime | run/checkpoint/approval/event contract | built-in graph or LangGraph-class adapter |
 | workflows | start/status/signal/cancel contract | n8n, Temporal, Argo Workflows |
-| tools/connectors | governed MCP gateway/runtime | isolated certified MCP servers |
+| tools/connectors | governed tool/MCP gateway/runtime | ViewSense mock now; native MCP adapter planned |
 | evaluation/guardrails | dataset/run/score/promotion contract | offline and online evaluation providers |
 | observability/SIEM | JSON, OpenMetrics, OTLP, audit events | enterprise collector to Elastic/Splunk/etc. |
 | operations/FinOps | SLO, usage, quota, chargeback APIs | enterprise dashboards, ITSM, cost systems |

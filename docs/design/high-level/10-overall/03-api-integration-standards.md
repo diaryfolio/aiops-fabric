@@ -4,17 +4,22 @@
 
 | Capability | Canonical interface | Notes |
 |---|---|---|
-| public AI response | `/v1/responses` HTTP/JSON; SSE for streaming | ViewSense-owned stable contract |
-| model inference | OpenAI-compatible `/v1/chat/completions` initially | adapter declares supported features |
+| public AI response | `/v1/responses` HTTP/JSON | SSE is planned |
+| model inference | OpenAI-compatible `/v1/chat/completions` subset | one configured adapter; capability discovery is planned |
 | memory | `/v1/memories` and `/v1/memories/search` | vendor-neutral record envelope |
-| MCP governance | `/v1/servers` and `/v1/tools/call` | protocol translation remains in MCP gateway |
-| provider governance | `/v1/provider-passports`, evaluations, and `:admit` | admission is an evaluated transition, not provider self-assertion |
+| MCP/tool governance | `PUT /v1/servers/{name}` and `POST /v1/tools/call` | current provider call is ViewSense-owned; native MCP transport is planned |
+| provider governance | `PUT/GET /v1/provider-passports/{name}`, evaluations, and `:admit` | admission is evaluated server-side |
 | execution evidence | `/v1/evidence-events` | append-only API; identity derives tenant and producer |
 | durable agent runs | `/v1/agent-runs`, `:resume`, `:cancel`, `/events` | idempotent create, optimistic version and ordered safe events |
-| long operations | operation resources plus CloudEvents | cancellable and observable |
+| synchronous ingestion | `POST /v1/documents:ingest` | paragraph chunking and memory writes; no durable job resource yet |
+| development identity | `POST /oauth2/token` | development-only client credentials and Trust Envelope minting |
+| long operations | operation resources plus CloudEvents | planned |
 | health | `/healthz` | must reveal no tenant/provider secrets |
 
-Every published HTTP contract exposes OpenAPI, uses a major version in the path, and has consumer-driven contract tests. Provider adapters are admitted only after passing the relevant conformance suite.
+FastAPI exposes runtime OpenAPI for implemented HTTP routes. Committed OpenAPI snapshots,
+consumer-driven tests for every service, SSE, and CloudEvents are target gates, not current evidence.
+The exact current route inventory is in
+[Implementation Conformance](../00-implementation-conformance.md#implemented-http-surface).
 
 The bundled OpenAI adapter implements the internal non-streaming chat-completions subset used by
 the orchestrator. It accepts only text `system`, `user`, and `assistant` messages, discards
@@ -25,20 +30,32 @@ URL to `https://api.openai.com/v1`. This is an additive provider implementation;
 require representative quality, latency, safety, and cost evaluation rather than a caller-selected
 field.
 
-## Required request context
+## Request context: implemented versus target
+
+```mermaid
+flowchart LR
+    Request["Incoming request"] --> TLS["Required client certificate"]
+    TLS --> Token["JWT issuer + audience + scope"]
+    Token --> Envelope["Signed Trust Envelope tenant"]
+    Envelope --> RequestID["X-Request-ID propagated"]
+    RequestID --> Handler["Service handler"]
+    Trace["W3C traceparent"] -. "captured inbound; full propagation planned" .-> Handler
+    Deadline["End-to-end deadline"] -. "planned standard" .-> Handler
+    Idempotency["Idempotency-Key"] -. "implemented for agent create only" .-> Handler
+```
 
 - `Authorization: Bearer …` with exact audience and least-required scope;
 - mTLS workload identity on internal calls;
 - identity-signed ViewSense Trust Envelope v1 containing tenant, delegated caller, subject,
   purpose, classification, and request correlation;
-- W3C `traceparent` and stable `X-Request-ID`;
+- stable `X-Request-ID`; inbound `traceparent` is logged, while complete W3C propagation is planned;
 - `Idempotency-Key` for retriable creates and tool calls with declared idempotency;
 - absolute deadline or remaining timeout budget.
 
-The current slice implements token audience/scope, mTLS, signed tenant delegation, request ID,
+The current slice implements token audience/scope, certificate-required TLS, signed tenant delegation, request ID,
 provider passport/evaluation admission, optional OPA decisions, safe evidence APIs, and persistent
 idempotency/version checks for agent runs. The agent events resource currently returns ordered JSON;
-SSE and CloudEvents export are later compatible transports. Full trace propagation and standardized
+SSE and CloudEvents export are later compatible transports. SPIFFE identity binding, full trace propagation, and standardized
 idempotency across every API remain next steps. The unsigned
 `X-ViewSense-Tenant` header is rejected; it is not a compatibility mechanism.
 
