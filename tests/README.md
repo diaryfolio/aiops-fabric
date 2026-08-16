@@ -69,15 +69,24 @@ ready, and `viewsense-smoke` completes successfully.
 
 ## 4. Direct memory API validation
 
-The memory gateway is internal and uses both mutual TLS and an audience/scoped bearer token. Open two terminals and keep these processes running:
+The memory gateway is internal and uses both mutual TLS and an audience/scoped bearer token. Start
+all commonly tested APIs in one foreground terminal; `Ctrl+C` stops every forward:
 
 ```bash
-kubectl -n viewsense-dev port-forward service/identity 9444:8443
+make ports
 ```
 
+Alternatively, manage them in the background:
+
 ```bash
-kubectl -n viewsense-dev port-forward service/memory-gateway 9445:8443
+make ports-start
+make ports-status
+make ports-stop
 ```
+
+The manager exposes identity `9444`, memory `9445`, governance `9446`, and agent runtime `9447` on
+`127.0.0.1` only. Background logs are available with
+`scripts/port-forward-dev.sh logs`.
 
 In a third terminal, load the development credentials without printing them and request a short-lived token:
 
@@ -146,11 +155,7 @@ Expected: the write returns an ID and the search returns the London record in `i
 
 ## 5. Durable agent API validation
 
-Keep the identity port-forward from section 4 running and expose the agent runtime:
-
-```bash
-kubectl -n viewsense-dev port-forward service/agent-runtime 9447:8443
-```
+Keep the forwards from section 4 running; the agent runtime is already available on port `9447`.
 
 Request the least-privileged run token and create an idempotent bounded run:
 
@@ -270,11 +275,7 @@ Expected: the terminal state is `completed`; events are sequences 1 through 6. A
 
 ## 6. Provider governance and evidence API validation
 
-Keep the identity port-forward from section 4 running and expose the governance API:
-
-```bash
-kubectl -n viewsense-dev port-forward service/governance 9446:8443
-```
+Keep the forwards from section 4 running; governance is already available on port `9446`.
 
 Request an administrator token and register a draft provider passport. A provider cannot submit
 `"status":"admitted"`; only the evaluated admission endpoint can make that transition.

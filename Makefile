@@ -1,4 +1,4 @@
-.PHONY: bootstrap lint unit catalog-check profile-check compose-up compose-test k8s-deploy k8s-test
+.PHONY: bootstrap lint unit catalog-check profile-check compose-up compose-test k8s-deploy k8s-test ports ports-start ports-stop ports-status
 
 bootstrap:
 	./scripts/bootstrap-dev-pki.sh
@@ -35,3 +35,15 @@ k8s-deploy:
 
 k8s-test:
 	./scripts/k8s-test.sh
+
+ports:
+	./scripts/port-forward-dev.sh foreground
+
+ports-start:
+	./scripts/port-forward-dev.sh start
+
+ports-stop:
+	./scripts/port-forward-dev.sh stop
+
+ports-status:
+	./scripts/port-forward-dev.sh status
