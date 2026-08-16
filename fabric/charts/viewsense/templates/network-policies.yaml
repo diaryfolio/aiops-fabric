@@ -61,7 +61,7 @@ spec:
   {{- else }}
   ingress: []
   {{- end }}
-  {{- if $module.egressTo }}
+  {{- if or $module.egressTo (and (eq $name "memory-mem0") (or $.Values.products.memory.mem0.externalEgress $.Values.products.memory.mem0.inCluster.enabled)) }}
   egress:
     {{- range $destination := $module.egressTo }}
     {{- if eq (include "viewsense.destinationEnabled" (list $destination $)) "true" }}
@@ -72,7 +72,7 @@ spec:
               app.kubernetes.io/instance: {{ $.Release.Name | quote }}
       ports:
         - protocol: TCP
-          port: {{ if or (eq $destination "memory-db") (eq $destination "registry-db") (eq $destination "governance-db") }}5432{{ else }}8443{{ end }}
+          port: {{ if or (eq $destination "memory-db") (eq $destination "registry-db") (eq $destination "governance-db") (eq $destination "agent-db") }}5432{{ else }}8443{{ end }}
     {{- end }}
     {{- end }}
     {{- if and (eq $name "llm-gateway") (ne $.Values.products.llm.product "mock-openai-compatible") }}
@@ -81,8 +81,30 @@ spec:
       ports: [{protocol: TCP, port: {{ $rule.port }}}]
     {{- end }}
     {{- end }}
+    {{- if and (eq $name "gateway") (ne $.Values.products.identity.product "development") }}
+    {{- range $rule := $.Values.products.identity.externalEgress }}
+    - to: [{ipBlock: {cidr: {{ $rule.cidr | quote }}}}]
+      ports: [{protocol: TCP, port: {{ $rule.port }}}]
+    {{- end }}
+    {{- end }}
     {{- if and (eq $name "memory-gateway") (ne $.Values.products.memory.product "postgres-pgvector") }}
     {{- range $rule := $.Values.products.memory.externalEgress }}
+    - to: [{ipBlock: {cidr: {{ $rule.cidr | quote }}}}]
+      ports: [{protocol: TCP, port: {{ $rule.port }}}]
+    {{- end }}
+    {{- end }}
+    {{- if eq $name "memory-mem0" }}
+    {{- if $.Values.products.memory.mem0.inCluster.enabled }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $.Values.products.memory.mem0.inCluster.namespace | quote }}
+          podSelector:
+            matchLabels:
+              {{- toYaml $.Values.products.memory.mem0.inCluster.podLabels | nindent 14 }}
+      ports: [{protocol: TCP, port: {{ $.Values.products.memory.mem0.inCluster.port }}}]
+    {{- end }}
+    {{- range $rule := $.Values.products.memory.mem0.externalEgress }}
     - to: [{ipBlock: {cidr: {{ $rule.cidr | quote }}}}]
       ports: [{protocol: TCP, port: {{ $rule.port }}}]
     {{- end }}
@@ -149,6 +171,26 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: governance
+              app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      ports: [{protocol: TCP, port: 5432}]
+{{- end }}
+{{- if eq (include "viewsense.moduleEnabled" (list "agent-runtime" (index .Values.modules "agent-runtime") .)) "true" }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agent-db-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: agent-db
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: agent-runtime
               app.kubernetes.io/instance: {{ .Release.Name | quote }}
       ports: [{protocol: TCP, port: 5432}]
 {{- end }}

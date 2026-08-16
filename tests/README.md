@@ -8,11 +8,23 @@ Run commands from the repository root. Development PKI and credentials are gener
 make lint
 make unit
 make catalog-check
+make profile-check
 helm lint fabric/charts/viewsense
 kubectl kustomize deploy/kubernetes/base >/dev/null
 ```
 
-Expected: Ruff succeeds, all Pytest tests pass, every `fabric/*` module descriptor resolves, Helm reports zero failures, and Kustomize renders without an error.
+Expected: Ruff succeeds, all Pytest tests pass, every `fabric/*` module descriptor and product
+catalog entry resolves, the default plus all curated Helm profiles render with zero failures, and
+Kustomize renders without an error.
+
+Inspect what a profile actually creates; a value naming an external product is not proof that the
+upstream operator/product was installed:
+
+```bash
+helm template viewsense fabric/charts/viewsense \
+  -f fabric/charts/viewsense/profiles/enterprise-suite.yaml |
+kubectl apply --dry-run=client -f - >/dev/null
+```
 
 ## 2. Docker Compose integration
 
@@ -52,7 +64,8 @@ make k8s-test
 kubectl get pods -n viewsense-dev
 ```
 
-Expected: all Deployments and all three StatefulSets are ready, and `viewsense-smoke` completes successfully.
+Expected: all Deployments and all four StatefulSets (memory, registry, governance, and agent) are
+ready, and `viewsense-smoke` completes successfully.
 
 ## 4. Direct memory API validation
 
@@ -131,7 +144,131 @@ jq
 
 Expected: the write returns an ID and the search returns the London record in `items`.
 
-## 5. Provider governance and evidence API validation
+## 5. Durable agent API validation
+
+Keep the identity port-forward from section 4 running and expose the agent runtime:
+
+```bash
+kubectl -n viewsense-dev port-forward service/agent-runtime 9447:8443
+```
+
+Request the least-privileged run token and create an idempotent bounded run:
+
+```bash
+AGENT_TOKEN="$(
+  curl --silent --show-error --fail \
+    --cacert .viewsense/pki/smoke/ca.crt \
+    --cert .viewsense/pki/smoke/tls.crt \
+    --key .viewsense/pki/smoke/tls.key \
+    --user "smoke:${VS_SMOKE_CLIENT_SECRET}" \
+    --header "Content-Type: application/x-www-form-urlencoded" \
+    --data-urlencode "grant_type=client_credentials" \
+    --data-urlencode "audience=agent-runtime" \
+    --data-urlencode "scope=agent.run" \
+    https://localhost:9444/oauth2/token | jq -r '.access_token'
+)"
+
+RUN="$(
+  curl --silent --show-error --fail-with-body \
+    --cacert .viewsense/pki/smoke/ca.crt \
+    --cert .viewsense/pki/smoke/tls.crt \
+    --key .viewsense/pki/smoke/tls.key \
+    --header "Authorization: Bearer ${AGENT_TOKEN}" \
+    --header "Idempotency-Key: agent-api-demo-0001" \
+    --header "Content-Type: application/json" \
+    --data '{"objective":"Validate a governed change","max_steps":5,"max_tool_calls":2,"max_cost_units":20}' \
+    https://localhost:9447/v1/agent-runs
+)"
+echo "${RUN}" | jq
+RUN_ID="$(echo "${RUN}" | jq -r '.id')"
+```
+
+Repeating the create with the same key returns the same ID with
+`"idempotent_replay":true`. Advance it to a human approval pause:
+
+```bash
+curl --silent --show-error --fail-with-body \
+  --cacert .viewsense/pki/smoke/ca.crt \
+  --cert .viewsense/pki/smoke/tls.crt \
+  --key .viewsense/pki/smoke/tls.key \
+  --header "Authorization: Bearer ${AGENT_TOKEN}" \
+  --header "Content-Type: application/json" \
+  --data '{"action":"start","expected_version":1}' \
+  "https://localhost:9447/v1/agent-runs/${RUN_ID}:resume" | jq
+
+curl --silent --show-error --fail-with-body \
+  --cacert .viewsense/pki/smoke/ca.crt \
+  --cert .viewsense/pki/smoke/tls.crt \
+  --key .viewsense/pki/smoke/tls.key \
+  --header "Authorization: Bearer ${AGENT_TOKEN}" \
+  --header "Content-Type: application/json" \
+  --data '{"action":"request_approval","expected_version":2}' \
+  "https://localhost:9447/v1/agent-runs/${RUN_ID}:resume" | jq
+```
+
+An `agent.run` token cannot approve. This must return `403`:
+
+```bash
+curl --silent --output /dev/null --write-out '%{http_code}\n' \
+  --cacert .viewsense/pki/smoke/ca.crt \
+  --cert .viewsense/pki/smoke/tls.crt \
+  --key .viewsense/pki/smoke/tls.key \
+  --header "Authorization: Bearer ${AGENT_TOKEN}" \
+  --header "Content-Type: application/json" \
+  --data '{"action":"approve","expected_version":3}' \
+  "https://localhost:9447/v1/agent-runs/${RUN_ID}:resume"
+```
+
+Obtain `agent.approve`, approve version 3, then use `agent.run` to checkpoint version 4 and complete
+version 5. Inspect the final ordered event history:
+
+```bash
+APPROVAL_TOKEN="$(
+  curl --silent --show-error --fail \
+    --cacert .viewsense/pki/smoke/ca.crt \
+    --cert .viewsense/pki/smoke/tls.crt \
+    --key .viewsense/pki/smoke/tls.key \
+    --user "smoke:${VS_SMOKE_CLIENT_SECRET}" \
+    --header "Content-Type: application/x-www-form-urlencoded" \
+    --data-urlencode "grant_type=client_credentials" \
+    --data-urlencode "audience=agent-runtime" \
+    --data-urlencode "scope=agent.approve" \
+    https://localhost:9444/oauth2/token | jq -r '.access_token'
+)"
+
+curl --silent --show-error --fail-with-body \
+  --cacert .viewsense/pki/smoke/ca.crt \
+  --cert .viewsense/pki/smoke/tls.crt \
+  --key .viewsense/pki/smoke/tls.key \
+  --header "Authorization: Bearer ${APPROVAL_TOKEN}" \
+  --header "Content-Type: application/json" \
+  --data '{"action":"approve","expected_version":3,"reason":"change approved"}' \
+  "https://localhost:9447/v1/agent-runs/${RUN_ID}:resume" | jq
+
+for step in 'checkpoint 4' 'complete 5'; do
+  set -- ${step}
+  curl --silent --show-error --fail-with-body \
+    --cacert .viewsense/pki/smoke/ca.crt \
+    --cert .viewsense/pki/smoke/tls.crt \
+    --key .viewsense/pki/smoke/tls.key \
+    --header "Authorization: Bearer ${AGENT_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --data "{\"action\":\"$1\",\"expected_version\":$2}" \
+    "https://localhost:9447/v1/agent-runs/${RUN_ID}:resume" | jq
+done
+
+curl --silent --show-error --fail-with-body \
+  --cacert .viewsense/pki/smoke/ca.crt \
+  --cert .viewsense/pki/smoke/tls.crt \
+  --key .viewsense/pki/smoke/tls.key \
+  --header "Authorization: Bearer ${AGENT_TOKEN}" \
+  "https://localhost:9447/v1/agent-runs/${RUN_ID}/events" | jq
+```
+
+Expected: the terminal state is `completed`; events are sequences 1 through 6. A stale
+`expected_version`, invalid state transition, or exhausted step budget returns `409`.
+
+## 6. Provider governance and evidence API validation
 
 Keep the identity port-forward from section 4 running and expose the governance API:
 
@@ -214,7 +351,7 @@ Expected: the admission response contains `"admitted": true`. The end-to-end smo
 writes and reads a payload-minimized evidence event and verifies that tenant spoofing through
 `X-ViewSense-Tenant` is rejected.
 
-## 6. Negative authorization validation
+## 7. Negative authorization validation
 
 A request without a bearer token must return `401`:
 
@@ -269,7 +406,75 @@ curl --silent --output /dev/null --write-out '%{http_code}\n' \
   https://localhost:9445/v1/memories/search
 ```
 
-## 7. API schema and JSON logs
+## 8. Mem0, OPA, Keycloak, SPIRE, workflow, and telemetry profiles
+
+These checks separate repository evidence from tests that require the selected enterprise product.
+
+### Mem0 adapter
+
+```bash
+helm template viewsense fabric/charts/viewsense \
+  -f fabric/charts/viewsense/profiles/mem0-oss.yaml >/dev/null
+kubectl -n viewsense-dev create secret generic mem0-credentials \
+  --from-literal=api-key='replace-from-secret-manager' \
+  --dry-run=client -o yaml
+```
+
+Before installation, deploy an authenticated Mem0 OSS REST server over HTTPS in the configured
+`memory-platform` namespace and make its pod labels/port match `mem0.inCluster`. For a remote Mem0
+endpoint disable `inCluster` and set explicit egress CIDRs. Run create/search through the ViewSense memory gateway, not
+directly from applications. The conformance pass must cover missing/wrong API key, upstream timeout,
+malformed response, tenant/owner isolation, limits, metadata, export/restore, and failure without
+fallback. For Mem0 Platform use `mem0-platform-adapter`; the adapter translates `/v1` paths while the
+ViewSense API remains unchanged.
+
+### OPA
+
+```bash
+helm template viewsense fabric/charts/viewsense \
+  -f fabric/charts/viewsense/profiles/enterprise-suite.yaml |
+awk '/name: opa/{found=1} found{print} /name: opa-policy/{exit}'
+```
+
+In a test namespace, prove admission allow and deny, then stop OPA and prove provider admission
+returns `503` rather than bypassing policy. Validate policy-bundle rollback and ensure inputs contain
+metadata only. The supported chart profile embeds OPA beside governance. A remote OPA endpoint is a
+future hardened profile because it also needs workload authentication, CA trust, explicit egress,
+and equivalent outage evidence.
+
+### Keycloak or another OIDC provider
+
+Configure issuer, JWKS URL, audience, tenant claim, and scope claim. Test a valid user/service token,
+then wrong issuer, wrong audience, missing `api.invoke`, missing tenant, disabled user, expired token,
+key rotation, JWKS outage, and a token sent directly to an internal service. Only the valid edge
+request may produce an internal Trust Envelope.
+
+### SPIRE
+
+The profile records workload-identity intent but does not install SPIRE. After installing the pinned
+upstream hardened charts, validate:
+
+```bash
+kubectl get pods -A -l app.kubernetes.io/name=spire-server
+kubectl get pods -A -l app.kubernetes.io/name=spire-agent
+kubectl get csidriver
+kubectl -n viewsense-dev get pod -o json |
+jq -r '.items[].spec.serviceAccountName' | sort -u
+```
+
+Each workload must receive only its registered SPIFFE ID. Test SVID rotation, expired/unregistered
+identity denial, trust-bundle rotation, server/agent restart, and direct pod traffic that bypasses the
+SDS proxy/mesh. mTLS identity does not replace audience/scoped authorization.
+
+### Workflows and observability
+
+n8n, Temporal, and Argo selections currently record planned integration intent; installation is not
+a workflow-adapter test. OpenTelemetry selection similarly identifies the expected collector. JSON
+stdout is the validated baseline. Send logs through the chosen collector to Elastic/Splunk and prove
+single-line JSON parsing, request correlation, Kubernetes metadata enrichment, redaction, backpressure,
+and that tokens/prompts/memory/tool payloads are absent.
+
+## 9. API schema and JSON logs
 
 Download the live OpenAPI document:
 
@@ -295,3 +500,16 @@ kubectl logs -n viewsense-dev deployment/memory-postgres --tail=20
 - Do not expose identity, memory, model, MCP, or provider services through public ingress.
 - Direct internal API tests use the fixed-tenant `smoke` identity. Unsigned tenant headers are rejected; public and internal tenant context comes from the signed Trust Envelope.
 - Production validation additionally requires CNI negative connectivity tests, enterprise IdP/workload identity, external secret rotation, backup/restore, HA/failure exercises, and SIEM/OTel evidence.
+
+## Validation evidence matrix
+
+| Capability | Repository-validated | Requires selected environment |
+|---|---|---|
+| built-in agent | unit, Compose, Kubernetes state/approval/idempotency smoke | HA, restore, autonomous worker/tool replay |
+| PostgreSQL/pgvector memory | unit, Compose, Kubernetes create/search | production scale, PITR, re-index |
+| Mem0 | adapter normalization/security unit and Helm profile | live OSS/Platform conformance, backup/export, outage |
+| OPA | fail-closed code path and sidecar profile rendering | live allow/deny/outage and bundle lifecycle |
+| OIDC/Keycloak | verifier boundary and profile rendering | realm/claims, MFA/session/key rotation/outage |
+| SPIRE | topology/profile/preflight documentation | live SVID/SDS rotation and spoof/expiry denial |
+| workflows | catalog/profile intent only | adapter contract; no provider is validated yet |
+| JSON logs | runtime and smoke inspection | OTel/Elastic/Splunk routing, alert and backpressure |

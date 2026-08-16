@@ -99,7 +99,7 @@ async def register_server(name: str, body: ServerRegistration, request: Request)
 
 @app.post("/v1/tools/call")
 async def call_tool(body: ToolCall, request: Request) -> dict:
-    auth.from_request(request, "mcp.invoke")
+    principal = auth.from_request(request, "mcp.invoke")
     tenant_id = delegated_tenant(request)
     async with database().acquire() as connection:
         server = await connection.fetchrow(
@@ -114,6 +114,7 @@ async def call_tool(body: ToolCall, request: Request) -> dict:
         audience=server["audience"],
         scope="provider.invoke",
         tenant_id=tenant_id,
+        trust_envelope=principal.trust_envelope,
         json={"tool": body.tool, "arguments": body.arguments},
     )
     if upstream.status_code >= 400:

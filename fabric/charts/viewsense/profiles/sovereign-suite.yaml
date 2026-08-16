@@ -1,0 +1,20 @@
+products:
+  memory:
+    product: postgres-pgvector
+    endpoint: https://memory-postgres:8443
+    audience: memory-postgres
+  agentRuntime:
+    enabled: true
+    product: builtin
+  policy:
+    enabled: true
+    product: opa-sidecar
+    endpoint: http://127.0.0.1:8181/v1/data/viewsense/provider/admit
+  workloadIdentity:
+    product: spire
+    spiffe:
+      trustDomain: viewsense.local
+      socketPath: unix:///spiffe-workload-api/spire-agent.sock
+  observability:
+    product: otel-collector
+    otlpEndpoint: http://otel-collector.observability.svc:4317

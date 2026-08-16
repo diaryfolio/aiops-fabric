@@ -19,13 +19,23 @@ Compromise of one component must not grant implicit access to another component,
 
 Human identity federates to the enterprise IdP using OIDC Authorization Code + PKCE or workload-appropriate OAuth flows. Workloads receive renewable, short-lived identities through SPIFFE/SPIRE, service mesh, or cloud workload identity. Application tokens have exact `aud`, narrow scopes, expiry, unique ID, and issuer. Shared bearer tokens, namespace trust, and long-lived API keys are prohibited.
 
-The development issuer uses client credentials and RS256 plus a generated CA to make these properties testable. It is not an enterprise IdP and must not be promoted.
+The development issuer uses client credentials and RS256 plus a generated CA to make these properties testable. It is not an enterprise IdP and must not be promoted. At the edge, the external OIDC verifier pins an HTTPS issuer and JWKS URL, exact audience, supported signature algorithms, required scopes, subject, and configured tenant claim. Keycloak is one compatible IdP, not a mandatory control-plane component. JWKS/IdP unavailability fails authentication closed.
+
+SPIRE is a cluster workload-identity authority, not an application library or proof of authorization.
+Production installs its server/agent lifecycle separately, maps each service account to a unique
+SPIFFE ID, rotates SVIDs, and presents them through an SDS-capable proxy or service mesh. ViewSense
+still requires exact token audience/scopes and tenant policy after mTLS succeeds.
 
 ## Tenant, Trust Envelope, and authorization
 
 The edge derives tenant from verified claims. Tenant and business context are signed claims, never an unsigned transport header. Trust Envelope v1 binds tenant, delegating workload, subject, purpose, classification, request correlation, audience, scopes, and expiry. Only registered delegators may request tenant-bound downstream tokens; fixed-tenant clients cannot change tenant. Receivers reject legacy tenant headers, missing envelopes, audience mismatch, inconsistent top-level/envelope tenants, and unsupported versions.
 
 Production uses standards-based token exchange or equivalent workload delegation while retaining the ViewSense envelope schema. Each hop obtains a new audience token rather than forwarding a human token or mutable context header. Data queries include tenant and owner/purpose predicates. Production adds policy decisions for classification, legal basis, retention, model class, connector action, and residency both before retrieval and after candidate retrieval.
+
+Provider admission may consult OPA through its Data API. The bundled OPA profile runs a policy
+sidecar in the governance pod; policy input contains provider metadata and requested constraints,
+not credentials or payloads. Timeout, malformed response, non-success response, missing result, and
+explicit deny all fail closed. OPA does not replace API authorization or workload identity.
 
 ## Provider and evidence trust
 
@@ -63,3 +73,6 @@ CI generates SBOMs, scans dependencies/images/IaC, signs artifacts and provenanc
 - direct orchestrator-to-provider/database network attempts;
 - provider credential absence in callers;
 - policy/identity unavailability fails closed for protected operations.
+- OIDC wrong issuer/audience/algorithm, missing tenant/scope, stale key, and JWKS outage;
+- OPA timeout/malformed/deny and SPIFFE ID/SVID rotation or spoof failures;
+- agent approval with `agent.run` only, stale version replay, invalid state transition, and budget exhaustion.

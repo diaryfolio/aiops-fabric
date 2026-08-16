@@ -22,7 +22,7 @@ async def health() -> dict:
 
 
 async def _proxy(request: Request, path: str, scope: str) -> JSONResponse:
-    auth.from_request(request, scope)
+    principal = auth.from_request(request, scope)
     tenant_id = delegated_tenant(request)
     upstream = await client.request(
         request.method,
@@ -30,6 +30,7 @@ async def _proxy(request: Request, path: str, scope: str) -> JSONResponse:
         audience=PROVIDER_AUDIENCE,
         scope="provider.invoke",
         tenant_id=tenant_id,
+        trust_envelope=principal.trust_envelope,
         json=await request.json(),
     )
     return JSONResponse(status_code=upstream.status_code, content=upstream.json())

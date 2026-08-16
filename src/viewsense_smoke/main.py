@@ -31,7 +31,8 @@ async def main() -> None:
     memory = os.getenv("VS_MEMORY_URL", "https://memory-gateway:8443")
     mcp = os.getenv("VS_MCP_URL", "https://mcp-gateway:8443")
     governance = os.getenv("VS_GOVERNANCE_URL", "https://governance:8443")
-    for url in (gateway, ingestion, memory, mcp, governance):
+    agent = os.getenv("VS_AGENT_URL", "https://agent-runtime:8443")
+    for url in (gateway, ingestion, memory, mcp, governance, agent):
         await wait_for(client, f"{url}/healthz")
     user_id = f"smoke-{uuid.uuid4().hex}"
 
@@ -183,6 +184,67 @@ async def main() -> None:
         )
         evidence_list.raise_for_status()
     assert len(evidence_list.json()["items"]) == 1, evidence_list.text
+
+    agent_token = await client.token("agent-runtime", "agent.run")
+    idempotency_key = f"smoke-agent-{uuid.uuid4().hex}"
+    async with client.http() as http:
+        created = await http.post(
+            f"{agent}/v1/agent-runs",
+            headers={
+                "Authorization": f"Bearer {agent_token}",
+                "Idempotency-Key": idempotency_key,
+            },
+            json={"objective": "Validate a bounded approval workflow", "max_steps": 3},
+        )
+        created.raise_for_status()
+        replay = await http.post(
+            f"{agent}/v1/agent-runs",
+            headers={
+                "Authorization": f"Bearer {agent_token}",
+                "Idempotency-Key": idempotency_key,
+            },
+            json={"objective": "Validate a bounded approval workflow", "max_steps": 3},
+        )
+        replay.raise_for_status()
+    agent_run_id = created.json()["id"]
+    assert replay.json()["id"] == agent_run_id
+    assert replay.json()["idempotent_replay"] is True
+
+    version = 1
+    for action in ("start", "request_approval"):
+        async with client.http() as http:
+            resumed = await http.post(
+                f"{agent}/v1/agent-runs/{agent_run_id}:resume",
+                headers={"Authorization": f"Bearer {agent_token}"},
+                json={"action": action, "expected_version": version},
+            )
+            resumed.raise_for_status()
+        version = resumed.json()["version"]
+    assert resumed.json()["state"] == "approval_pending"
+
+    approval_token = await client.token("agent-runtime", "agent.approve")
+    workflow_actions = (
+        ("approve", approval_token),
+        ("checkpoint", agent_token),
+        ("complete", agent_token),
+    )
+    for action, token in workflow_actions:
+        async with client.http() as http:
+            resumed = await http.post(
+                f"{agent}/v1/agent-runs/{agent_run_id}:resume",
+                headers={"Authorization": f"Bearer {token}"},
+                json={"action": action, "expected_version": version},
+            )
+            resumed.raise_for_status()
+        version = resumed.json()["version"]
+    assert resumed.json()["state"] == "completed"
+    async with client.http() as http:
+        agent_events = await http.get(
+            f"{agent}/v1/agent-runs/{agent_run_id}/events",
+            headers={"Authorization": f"Bearer {agent_token}"},
+        )
+        agent_events.raise_for_status()
+    assert len(agent_events.json()["items"]) == 6
     print("ViewSense end-to-end smoke tests passed")
 
 

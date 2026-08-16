@@ -11,7 +11,7 @@
 | `memory/` | memory gateway and vector providers | implemented reference |
 | `mcp-registry/` | MCP catalog and invocation boundary | implemented reference |
 | `ingestion/` | governed document chunking and indexing entry point | implemented reference |
-| `agents/` | durable bounded agent runs | contract only |
+| `agents/` | durable bounded agent runs | implemented reference |
 | `workflows/` | n8n/Temporal/Argo provider boundary | contract only |
 | `observability/` | JSON/OTel/SIEM integration boundary | partial reference |
 
@@ -22,4 +22,8 @@ Each capability directory must contain:
 - valid paths to its implementation and design contracts;
 - honest provider status: `bundled`, `external`, or `planned`.
 
-The umbrella chart is `fabric/charts/viewsense`. Each runtime module can be independently enabled and provider products are selected through `products.*`. External Secrets, workload identity, and production provider charts remain enterprise overlays. Run `make catalog-check` to reject missing modules, dangling paths, or README-only placeholders.
+The authoritative product and integration-mode list is [PRODUCTS.md](PRODUCTS.md), backed by
+`product-catalog.json`. The umbrella chart is `fabric/charts/viewsense`. Each runtime module can be
+independently enabled and provider products are selected through `products.*`. External Secrets,
+cluster workload identity, and production provider charts remain enterprise overlays. Run
+`make catalog-check` and `make profile-check` to reject catalog drift and invalid product profiles.

@@ -3,13 +3,13 @@
   "kind": "Module",
   "metadata": {"name": "agents", "title": "Bounded agent runtime"},
   "spec": {
-    "maturity": "contract-only",
-    "implementationPaths": [],
-    "contractPaths": ["docs/design/high-level/70-agentic/01-agent-runtime-ingestion-workflows.md"],
-    "helmPaths": ["products.agentRuntime"],
-    "dataOwnership": ["planned agent run checkpoints", "planned approval state"],
+    "maturity": "implemented-reference",
+    "implementationPaths": ["src/viewsense_agent_runtime/app.py"],
+    "contractPaths": ["docs/design/high-level/70-agentic/01-agent-runtime-ingestion-workflows.md", "contracts/schemas/agent-run-v1.schema.json"],
+    "helmPaths": ["products.agentRuntime", "modules.agent-runtime", "datastores.agent"],
+    "dataOwnership": ["agent run checkpoints", "approval state", "ordered run events"],
     "providers": [
-      {"name": "builtin", "status": "planned"},
+      {"name": "builtin", "status": "bundled"},
       {"name": "langgraph-compatible-external", "status": "planned"}
     ]
   }

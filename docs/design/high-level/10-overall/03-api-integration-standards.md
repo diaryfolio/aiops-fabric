@@ -10,6 +10,7 @@
 | MCP governance | `/v1/servers` and `/v1/tools/call` | protocol translation remains in MCP gateway |
 | provider governance | `/v1/provider-passports`, evaluations, and `:admit` | admission is an evaluated transition, not provider self-assertion |
 | execution evidence | `/v1/evidence-events` | append-only API; identity derives tenant and producer |
+| durable agent runs | `/v1/agent-runs`, `:resume`, `:cancel`, `/events` | idempotent create, optimistic version and ordered safe events |
 | long operations | operation resources plus CloudEvents | cancellable and observable |
 | health | `/healthz` | must reveal no tenant/provider secrets |
 
@@ -26,9 +27,16 @@ Every published HTTP contract exposes OpenAPI, uses a major version in the path,
 - absolute deadline or remaining timeout budget.
 
 The current slice implements token audience/scope, mTLS, signed tenant delegation, request ID,
-provider passport/evaluation admission, and safe evidence APIs. Trace propagation,
-idempotency persistence, and external policy decisions are required next steps. The unsigned
+provider passport/evaluation admission, optional OPA decisions, safe evidence APIs, and persistent
+idempotency/version checks for agent runs. The agent events resource currently returns ordered JSON;
+SSE and CloudEvents export are later compatible transports. Full trace propagation and standardized
+idempotency across every API remain next steps. The unsigned
 `X-ViewSense-Tenant` header is rejected; it is not a compatibility mechanism.
+
+External OIDC is terminated only at the edge. The verifier pins HTTPS issuer, JWKS, audience,
+algorithms, required scopes, subject, and configured tenant claim. The edge then exchanges that
+identity for an audience-specific internal token; internal services never accept the external human
+token directly.
 
 ## Compatibility
 

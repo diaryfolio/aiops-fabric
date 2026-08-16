@@ -35,7 +35,7 @@ async def health() -> dict:
 
 @app.post("/v1/documents:ingest", status_code=201)
 async def ingest(body: IngestionRequest, request: Request) -> dict:
-    auth.from_request(request, "ingest.write")
+    principal = auth.from_request(request, "ingest.write")
     tenant_id = delegated_tenant(request)
     chunks = chunk_text(body.content, body.max_characters, body.overlap)
     document_id = f"doc_{uuid.uuid4().hex}"
@@ -47,6 +47,7 @@ async def ingest(body: IngestionRequest, request: Request) -> dict:
             audience="memory-gateway",
             scope="memory.write",
             tenant_id=tenant_id,
+            trust_envelope=principal.trust_envelope,
             json={
                 "owner_id": body.owner_id,
                 "content": chunk,

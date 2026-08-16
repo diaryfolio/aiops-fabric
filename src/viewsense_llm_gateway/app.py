@@ -24,7 +24,7 @@ async def health() -> dict:
 
 @app.post("/v1/chat/completions")
 async def completions(request: Request) -> JSONResponse:
-    auth.from_request(request, "llm.invoke")
+    principal = auth.from_request(request, "llm.invoke")
     tenant_id = delegated_tenant(request)
     payload: dict[str, Any] = await request.json()
     upstream = await client.request(
@@ -33,6 +33,7 @@ async def completions(request: Request) -> JSONResponse:
         audience=PROVIDER_AUDIENCE,
         scope="provider.invoke",
         tenant_id=tenant_id,
+        trust_envelope=principal.trust_envelope,
         json=payload,
         timeout=50,
     )

@@ -97,16 +97,21 @@ class ServiceClient:
         audience: str,
         scope: str,
         tenant_id: str | None = None,
+        trust_envelope: Any | None = None,
         json: Any = None,
         timeout: float = 20.0,
     ) -> httpx.Response:
         request_id = request_id_context.get()
+        subject = getattr(trust_envelope, "subject", None)
+        purpose = getattr(trust_envelope, "purpose", "service-operation")
+        classification = getattr(trust_envelope, "classification", "internal")
         token = await self.token(
             audience,
             scope,
             tenant_id=tenant_id,
-            purpose="service-operation",
-            classification="internal",
+            subject=subject,
+            purpose=purpose,
+            classification=classification,
             request_id=request_id,
         )
         headers = {"Authorization": f"Bearer {token}"}

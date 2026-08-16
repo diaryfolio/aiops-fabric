@@ -2,7 +2,15 @@
 
 ## Decision
 
-ViewSense is an API-first, Kubernetes-native sovereign AI control and evidence fabric, not a bundled AI product. It owns portable trust envelopes, provider admission, policy, routing, orchestration, safe evidence context, and stable contracts. Model, memory, workflow, and MCP implementations are providers behind those contracts.
+ViewSense is an API-first, Kubernetes-native sovereign AI control and evidence fabric with a small
+portable reference suite. It owns portable trust envelopes, provider admission, policy, routing,
+bounded agent state, safe evidence context, and stable contracts. Model, memory, workflow, identity,
+policy, and MCP products remain replaceable behind those contracts.
+
+Product packaging uses four explicit modes: `bundled`, `adapter`, `managed-dependency`, and
+`external`. A bundled component is installed and tested with ViewSense; an adapter is installed but
+its upstream product is separate; a managed dependency is installed/operated at platform scope; an
+external product is reached through an API. Product selection never implies product installation.
 
 ## System boundaries
 
@@ -61,4 +69,11 @@ sequenceDiagram
 
 ## Implemented reference slice
 
-The current code proves edge-to-orchestrator-to-memory/LLM flow, MCP registration/invocation, signed Trust Envelope tenant delegation, provider passport/evaluation admission, append-only safe evidence events, mTLS, scoped tokens, database ownership, provider host allow-listing, network segmentation, and Kubernetes deployment. Streaming, enterprise identity federation, external policy engines, durable workflow execution, cryptographic third-party passport verification, immutable evidence export, full OpenTelemetry, HA, backups, and real provider adapters remain roadmap work and are not represented as complete.
+The current code proves edge-to-orchestrator-to-memory/LLM flow, PostgreSQL/pgvector and Mem0
+memory boundaries, MCP registration/invocation, persistent bounded agent lifecycle, signed Trust
+Envelope tenant delegation, external OIDC validation, built-in or OPA admission, append-only safe
+evidence events, mTLS, scoped tokens, database ownership, provider host allow-listing, network
+segmentation, and Kubernetes deployment. Keycloak and SPIRE are documented managed integrations;
+their operators are not bundled. Autonomous agent workers, workflow adapters, cryptographic
+third-party passport verification, immutable evidence export, full OpenTelemetry, HA, backups, and
+provider certification remain roadmap work and are not represented as complete.

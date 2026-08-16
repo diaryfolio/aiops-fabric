@@ -68,3 +68,21 @@ def test_module_catalog_is_complete_and_resolves_repository_paths():
             assert set(provider) == {"name", "status"}
             assert provider["name"]
             assert provider["status"] in PROVIDER_STATUS
+
+
+def test_product_catalog_has_unique_ids_and_honest_readiness():
+    schema = json.loads(
+        (CATALOG_ROOT / "product-catalog.schema.json").read_text(encoding="utf-8")
+    )
+    assert "products" in schema["required"]
+    catalog = json.loads((CATALOG_ROOT / "product-catalog.json").read_text(encoding="utf-8"))
+    assert catalog["apiVersion"] == "fabric.viewsense.io/v1alpha1"
+    assert catalog["kind"] == "ProductCatalog"
+    product_ids = [product["id"] for product in catalog["products"]]
+    assert len(product_ids) == len(set(product_ids))
+    for product in catalog["products"]:
+        assert product["mode"] in {"bundled", "adapter", "managed-dependency", "external"}
+        assert product["readiness"] in {"validated", "configuration-ready", "planned"}
+        assert product["tests"]
+        if product["readiness"] == "validated":
+            assert product["mode"] == "bundled"

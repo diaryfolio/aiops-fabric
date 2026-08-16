@@ -14,7 +14,7 @@ Normalizes model IDs, capabilities, errors, token usage, routing, deadlines, and
 
 ## Memory gateway and providers
 
-The gateway enforces tenant/purpose policy and exposes canonical records. A provider implements storage, embedding, retrieval, filtering, retention, and export. The reference provider uses PostgreSQL/pgvector; Mem0 is a future adapter, not a replacement for the stable gateway.
+The gateway enforces tenant/purpose policy and exposes canonical records. A provider implements storage, embedding, retrieval, filtering, retention, and export. The reference provider uses PostgreSQL/pgvector. The Mem0 OSS/Platform adapter is executable and keeps its API key, tenant/owner pseudonymization, upstream paths, and response normalization inside the provider boundary; Mem0 remains separate from the stable gateway.
 
 Memory is split conceptually into:
 
@@ -34,11 +34,21 @@ Durable workflow engines (Temporal, Argo Workflows, n8n, or an enterprise produc
 
 ## Agent runtime and ingestion
 
-The online agent runtime is a durable, bounded state machine that uses only the LLM, memory, policy, workflow, and MCP APIs. It owns run/checkpoint state but no provider data. The ingestion service owns document ingestion jobs and deterministic chunking; parsing, enrichment, embeddings, and vector persistence remain replaceable stages. See the dedicated agentic design for tool loops, approvals, ingestion poisoning controls, and workflow-provider selection.
+The bundled online agent runtime is a persistent bounded state machine. It implements idempotent run
+creation, optimistic versions, step/cost/tool budgets, checkpoint, approval/rejection, cancellation,
+terminal states, and ordered event history in its own PostgreSQL database. It owns run/checkpoint
+state but no provider data. Automatic plan/model/tool workers and external workflow adapters are not
+yet implemented. The ingestion service owns document ingestion jobs and deterministic chunking;
+parsing, enrichment, embeddings, and vector persistence remain replaceable stages.
 
 ## Identity and policy
 
-Human identity federates through enterprise OIDC. Workload identity uses SPIFFE/SPIRE, mesh identity, or equivalent. An external policy decision point such as OPA can evaluate tenant, classification, model, memory purpose, tool side effects, and residency. The repository's issuer is development-only.
+Human identity federates through enterprise OIDC; the edge verifier supports generic OIDC and
+Keycloak-compatible issuer/JWKS/claim mapping. Workload identity uses SPIFFE/SPIRE, mesh identity,
+or equivalent. SPIRE is installed as a platform dependency and ViewSense consumes SVIDs through an
+SDS-capable proxy/mesh rather than embedding SPIRE into application code. Provider admission uses
+the built-in checks or a fail-closed OPA decision API; the chart can place OPA beside governance.
+The repository's issuer and static PKI are development-only.
 
 ## Governance and evidence
 
@@ -58,7 +68,8 @@ All components emit OpenTelemetry metrics/traces/log correlation. Security audit
 | Capability | Reference slice | Replaceable examples |
 |---|---|---|
 | LLM provider | deterministic mock | vLLM, Ollama, OpenAI, Azure OpenAI |
-| memory provider | PostgreSQL + pgvector | Mem0 adapter, Qdrant adapter, managed vector service |
+| memory provider | PostgreSQL + pgvector; Mem0 adapter | Qdrant adapter, managed vector service |
+| agent runtime | persistent bounded state machine | LangGraph-compatible adapter |
 | MCP provider | echo test server | certified enterprise MCP servers |
 | identity | local RSA token issuer | enterprise IdP + workload identity |
 | governance/evidence | owned PostgreSQL reference | external policy and immutable evidence sinks |

@@ -14,6 +14,13 @@ global:
 products:
   identity:
     product: development
+    issuer: ""
+    jwksUrl: ""
+    audience: viewsense
+    tenantClaim: tenant_id
+    scopeClaim: scope
+    # JWKS/issuer network access for external identity. Empty is fail-closed.
+    externalEgress: []
   llm:
     product: mock-openai-compatible
     endpoint: https://mock-llm:8443
@@ -28,17 +35,42 @@ products:
     endpoint: https://memory-postgres:8443
     audience: memory-postgres
     externalEgress: []
+    mem0:
+      mode: oss
+      endpoint: https://mem0.example.invalid
+      credentialsSecret: mem0-credentials
+      externalEgress: []
+      inCluster:
+        enabled: false
+        namespace: memory-platform
+        podLabels:
+          app.kubernetes.io/name: mem0
+        port: 8443
   ingestion:
     product: builtin-deterministic
   agentRuntime:
-    enabled: false
-    product: contract-only
+    enabled: true
+    product: builtin
   workflow:
     enabled: false
     product: none
   mcp:
     mockProviderEnabled: true
     allowedHosts: mock-mcp
+  policy:
+    enabled: false
+    product: builtin
+    endpoint: http://127.0.0.1:8181/v1/data/viewsense/provider/admit
+    opa:
+      image: openpolicyagent/opa:1.8.0-static
+  workloadIdentity:
+    product: static-development-pki
+    spiffe:
+      trustDomain: viewsense.local
+      socketPath: unix:///spiffe-workload-api/spire-agent.sock
+  observability:
+    product: json-stdout
+    otlpEndpoint: ""
 
 modules:
   identity:
@@ -113,7 +145,7 @@ modules:
     clientId: memory-gateway
     clientSecretKey: memory-gateway
     ingressFrom: [orchestrator, smoke]
-    egressTo: [identity, memory-postgres]
+    egressTo: [identity, memory-postgres, memory-mem0]
     resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
   memory-postgres:
     enabled: true
@@ -122,6 +154,14 @@ modules:
     tlsSecret: tls-memory-postgres
     ingressFrom: [memory-gateway]
     egressTo: [memory-db]
+    resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
+  memory-mem0:
+    enabled: true
+    appModule: viewsense_memory_mem0.app
+    plane: memory-provider
+    tlsSecret: tls-memory-mem0
+    ingressFrom: [memory-gateway]
+    egressTo: []
     resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
   mcp-gateway:
     enabled: true
@@ -141,6 +181,14 @@ modules:
     ingressFrom: [mcp-gateway]
     egressTo: []
     resources: {requests: {cpu: 25m, memory: 64Mi}, limits: {cpu: 250m, memory: 192Mi}}
+  agent-runtime:
+    enabled: true
+    appModule: viewsense_agent_runtime.app
+    plane: agent-execution
+    tlsSecret: tls-agent-runtime
+    ingressFrom: [smoke]
+    egressTo: [agent-db]
+    resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
 
 datastores:
   memory:
@@ -154,6 +202,10 @@ datastores:
   governance:
     image: postgres:16-bookworm
     credentialsSecret: governance-db-credentials
+    storage: 1Gi
+  agent:
+    image: postgres:16-bookworm
+    credentialsSecret: agent-db-credentials
     storage: 1Gi
 
 networkPolicy:

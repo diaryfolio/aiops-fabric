@@ -1,7 +1,13 @@
-# Agent and Ingestion Modules
+# Durable Agent Runtime Module
 
-The current `viewsense_ingestion` service proves governed paragraph-aware chunking through the memory API. The planned agent-runtime module implements a durable bounded state machine through LLM, memory, workflow, policy, and MCP gateway contracts.
+The bundled `viewsense_agent_runtime` is a PostgreSQL-backed bounded state machine. It provides
+idempotent run creation, optimistic versioning, checkpoints, approval/rejection, step budgets,
+cancellation, terminal states, and ordered safe events through Agent Run v1.
 
-Helm installs modules; a future operator reconciles provider and agent-profile lifecycle. Agent steps never gain permissions from model output, and agentic enrichment never replaces source text or bypasses data classification/evaluation.
+It deliberately does not put an LLM loop inside an HTTP request. Future workers claim durable runs
+and use only the LLM, memory, MCP, workflow, governance, and policy APIs. LangGraph and other engines
+remain replaceable adapters behind the same run contract. Agent steps never gain permissions from
+model output.
 
-This directory is intentionally `contract-only`, not empty or implemented. `module.json` makes that maturity machine-readable so packaging cannot imply that an agent runtime currently ships.
+The default Helm, Compose, and Kubernetes development profiles install the runtime and its owned
+database and execute its approval lifecycle in the smoke suite.

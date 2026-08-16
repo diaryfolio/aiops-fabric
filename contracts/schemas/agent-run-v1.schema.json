@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://viewsense.local/schemas/agent-run-v1.schema.json",
+  "title": "ViewSense Agent Run v1",
+  "type": "object",
+  "required": ["objective"],
+  "properties": {
+    "objective": {"type": "string", "minLength": 1, "maxLength": 20000},
+    "profile": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "max_steps": {"type": "integer", "minimum": 1, "maximum": 100},
+    "max_tool_calls": {"type": "integer", "minimum": 0, "maximum": 100},
+    "max_cost_units": {"type": "integer", "minimum": 1, "maximum": 1000000}
+  },
+  "additionalProperties": false
+}

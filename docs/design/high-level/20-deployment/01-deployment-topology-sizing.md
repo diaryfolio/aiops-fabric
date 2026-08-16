@@ -35,6 +35,23 @@ The current manifests intentionally touch only `viewsense-dev`. Production overl
 6. Run conformance and zero-trust negative tests before accepting traffic.
 7. Register real providers through audited configuration and remove mocks.
 
+## Product installation modes
+
+- `bundled`: ViewSense deploys and tests the component and owns its lifecycle, such as the bounded
+  agent runtime and PostgreSQL/pgvector reference provider.
+- `adapter`: ViewSense deploys the contract/credential boundary while the product is separate, such
+  as the Mem0 adapter.
+- `managed-dependency`: a platform team installs the cluster service with its upstream lifecycle,
+  such as SPIRE, an OpenTelemetry Collector, or external secrets.
+- `external`: ViewSense configures an authenticated endpoint, such as Keycloak/OIDC, a cloud LLM,
+  or a workflow system.
+
+The `enterprise-suite` profile describes integration intent. It does not create cluster-scoped
+Keycloak, SPIRE, n8n, or OpenTelemetry operators. OPA can be embedded as a governance sidecar
+because it is a stateless local policy decision point with a narrow loopback API. Every external or
+managed selection requires credentials, CA trust, explicit egress, conformance tests, version
+pinning, upgrade/rollback ownership, and a provider passport before production routing.
+
 ## Sizing method
 
 Control-plane sizing is driven by concurrent requests and provider wait time. Inference sizing is driven by tokens, context length, batching, quantization, and model/GPU class:

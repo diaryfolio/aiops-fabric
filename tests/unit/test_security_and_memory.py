@@ -7,10 +7,10 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from pydantic import ValidationError
 
-from viewsense_common.auth import TokenVerifier
+from viewsense_common.auth import OIDCTokenVerifier, TokenVerifier, validate_oidc_url
 
 
 def _keys() -> tuple[bytes, bytes]:
@@ -118,6 +118,97 @@ def test_chunking_preserves_content_and_hard_limit():
     assert all(0 < len(chunk) <= 240 for chunk in chunks)
     assert "First section" in chunks[0]
     assert any("Second section" in chunk for chunk in chunks)
+
+
+def test_oidc_and_mem0_integration_boundaries(monkeypatch, tmp_path):
+    _, public_key = _keys()
+    public_file = tmp_path / "public.pem"
+    public_file.write_bytes(public_key)
+    monkeypatch.setenv("VS_IDENTITY_PUBLIC_KEY_FILE", str(public_file))
+
+    from viewsense_memory_mem0.app import (
+        external_owner,
+        first_memory_id,
+        mem0_path,
+        normalize_search,
+        validate_mem0_url,
+    )
+
+    assert validate_oidc_url("https://id.example.test/realms/viewsense")
+    with pytest.raises(ValueError):
+        validate_oidc_url("http://id.example.test")
+    assert validate_mem0_url("https://memory.example.test")
+    with pytest.raises(ValueError):
+        validate_mem0_url("http://memory.example.test")
+    assert external_owner("tenant-a", "alice") != external_owner("tenant-b", "alice")
+    assert mem0_path("memories", "oss") == "/memories"
+    assert mem0_path("memories", "platform") == "/v1/memories"
+    assert first_memory_id({"results": [{"id": "memory-1"}]}) == "memory-1"
+    assert normalize_search(
+        {"results": [{"id": "memory-1", "memory": "safe result", "score": 0.9}]}, 5
+    ) == [{"id": "memory-1", "content": "safe result", "metadata": {}, "score": 0.9}]
+
+
+def test_external_oidc_establishes_tenant_bound_edge_identity(monkeypatch):
+    private_key, public_key = _keys()
+    monkeypatch.setenv("VS_EXTERNAL_OIDC_ISSUER", "https://id.example.test/realms/viewsense")
+    monkeypatch.setenv("VS_EXTERNAL_OIDC_JWKS_URL", "https://id.example.test/certs")
+    monkeypatch.setenv("VS_EXTERNAL_OIDC_AUDIENCE", "viewsense")
+    verifier = OIDCTokenVerifier()
+
+    class SigningKey:
+        key = public_key
+
+    class StaticJWKS:
+        @staticmethod
+        def get_signing_key_from_jwt(_: str) -> SigningKey:
+            return SigningKey()
+
+    verifier.jwks = StaticJWKS()  # type: ignore[assignment]
+    now = int(time.time())
+    token = jwt.encode(
+        {
+            "iss": "https://id.example.test/realms/viewsense",
+            "sub": "enterprise-user-1",
+            "aud": "viewsense",
+            "iat": now,
+            "exp": now + 60,
+            "scope": "api.invoke",
+            "tenant_id": "tenant-a",
+            "classification": "confidential",
+        },
+        private_key,
+        algorithm="RS256",
+    )
+    request = Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/v1/responses",
+            "headers": [(b"authorization", f"Bearer {token}".encode())],
+        }
+    )
+    principal = verifier.from_request(request, "api.invoke")
+    assert principal.tenant_id == "tenant-a"
+    assert principal.trust_envelope is not None
+    assert principal.trust_envelope.subject == "enterprise-user-1"
+    assert principal.trust_envelope.classification == "confidential"
+
+
+def test_agent_state_machine_is_bounded_and_requires_approval(monkeypatch, tmp_path):
+    _, public_key = _keys()
+    public_file = tmp_path / "public.pem"
+    public_file.write_bytes(public_key)
+    monkeypatch.setenv("VS_IDENTITY_PUBLIC_KEY_FILE", str(public_file))
+
+    from viewsense_agent_runtime.app import next_state
+
+    assert next_state("received", "start") == "running"
+    assert next_state("running", "request_approval") == "approval_pending"
+    assert next_state("approval_pending", "approve") == "running"
+    assert next_state("running", "complete") == "completed"
+    with pytest.raises(ValueError):
+        next_state("approval_pending", "complete")
 
 
 def test_governance_models_reject_self_admission_and_sensitive_evidence(monkeypatch, tmp_path):

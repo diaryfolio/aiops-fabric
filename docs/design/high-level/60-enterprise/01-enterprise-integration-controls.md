@@ -59,10 +59,34 @@ Secrets, tokens, authorization headers, raw prompts/completions, memory content,
 
 The edge validates external enterprise tokens against configured issuer/JWKS and maps stable subject, tenant, groups, authentication strength, and session risk. Internal services never accept human tokens as workload identity; the edge performs controlled delegation with a short-lived audience token. SCIM may automate user/group provisioning, but authorization remains based on current verified claims and policy. Break-glass identity is separate, time-bound, approval-gated, and always audited.
 
+Keycloak is an approved integration choice, not part of the mandatory core. Use the official
+Keycloak Operator or an existing enterprise service, then configure only issuer/JWKS/audience/claim
+mapping in ViewSense. SPIRE is similarly operated at cluster scope. OPA is suited to a local sidecar
+for low-latency fail-closed decisions, while a centrally managed external OPA endpoint is appropriate
+only when its availability, mTLS, egress, and policy-bundle lifecycle meet the protected operation's
+SLO.
+
+## Suite selection rule
+
+Every product is classified as bundled, adapter, managed dependency, or external and separately as
+validated, configuration-ready, or planned. The machine-readable source is
+`fabric/product-catalog.json`; Helm profiles are curated configuration, not evidence of an upstream
+installation. Production acceptance requires the named conformance and failure tests in addition to
+successful rendering.
+
 ## Telemetry deployment pattern
 
 Applications emit JSON stdout, OpenMetrics, and OTLP using vendor-neutral semantic conventions. A per-cluster collector layer batches, redacts, samples, and routes data to enterprise systems. Security audit is not sampled. Tail sampling can retain errors/slow traces while limiting routine prompt-path telemetry cost. Collector unavailability uses bounded buffers and must never fill application disks; regulated operations can be configured to fail closed when mandatory audit cannot be delivered.
 
 ## Current reference status
 
-Implemented now: JSON access/runtime logs, request correlation propagation, mTLS, audience/scoped tokens, signed Trust Envelope tenant delegation, provider passport/evaluation admission, append-only safe evidence metadata, restricted pods, network policies, API schemas, and positive/negative smoke tests. Designed integration points but not production implementations: enterprise OIDC/SCIM, external policy engine, signed third-party passports, evaluation runners/datasets, immutable evidence/audit store, OTel metrics/traces/collectors, SIEM exporters, external secrets, HA/DR, autoscaling, supply-chain admission, and ITSM. Production readiness requires selecting and testing those integrations; the local issuer and mock providers do not satisfy them.
+Implemented now: JSON access/runtime logs, request correlation propagation, mTLS,
+audience/scoped tokens, signed Trust Envelope tenant delegation, external OIDC edge verification,
+built-in/OPA provider admission, append-only safe evidence metadata, durable bounded agent state,
+PostgreSQL/pgvector and Mem0 adapter boundaries, restricted pods, network policies, API schemas,
+profile rendering, and positive/negative smoke tests. Configuration-ready but environment-dependent:
+Keycloak/generic OIDC, SPIRE consumption architecture, OPA sidecar, Mem0, and collector routing.
+Planned: workflow adapters, SCIM, signed third-party passports, evaluation runners/datasets,
+immutable evidence/audit export, full OTel instrumentation/exporters, external secrets, HA/DR,
+autoscaling, supply-chain admission, and ITSM. Production readiness requires selecting and testing
+those integrations; the local issuer and mock providers do not satisfy them.

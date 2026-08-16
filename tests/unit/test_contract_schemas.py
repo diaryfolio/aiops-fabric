@@ -7,6 +7,7 @@ from pathlib import Path
 def test_machine_readable_contracts_are_versioned_and_closed():
     root = Path(__file__).resolve().parents[2] / "contracts" / "schemas"
     expected = {
+        "agent-run-v1.schema.json",
         "evidence-event-v1.schema.json",
         "provider-passport-v1.schema.json",
         "trust-envelope-v1.schema.json",

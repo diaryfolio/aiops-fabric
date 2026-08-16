@@ -9,6 +9,7 @@ from typing import Any, Literal
 from urllib.parse import urlparse
 
 import asyncpg
+import httpx
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -29,6 +30,10 @@ SENSITIVE_EVIDENCE_KEYS = {
     "secret",
     "token",
 }
+POLICY_MODE = os.getenv("VS_POLICY_MODE", "builtin")
+POLICY_URL = os.getenv(
+    "VS_POLICY_URL", "http://127.0.0.1:8181/v1/data/viewsense/provider/admit"
+)
 
 
 @asynccontextmanager
@@ -116,6 +121,36 @@ def database() -> asyncpg.Pool:
 
 def decode_json(value: Any) -> Any:
     return json.loads(value) if isinstance(value, str) else value
+
+
+async def external_policy_reasons(passport: asyncpg.Record, body: AdmissionRequest) -> list[str]:
+    if POLICY_MODE == "builtin":
+        return []
+    policy_input = {
+        "provider": {
+            "name": passport["name"],
+            "kind": passport["kind"],
+            "capabilities": decode_json(passport["capabilities"]),
+            "residencies": list(passport["residencies"]),
+            "data_classifications": list(passport["data_classifications"]),
+            "status": passport["status"],
+        },
+        "request": body.model_dump(mode="json"),
+    }
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(5, connect=2)) as client:
+            response = await client.post(POLICY_URL, json={"input": policy_input})
+        response.raise_for_status()
+        result = response.json().get("result")
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(503, "external policy decision unavailable") from exc
+    if result is True:
+        return []
+    if isinstance(result, dict) and result.get("allow") is True:
+        return []
+    if isinstance(result, dict) and isinstance(result.get("reasons"), list):
+        return [str(reason)[:256] for reason in result["reasons"]]
+    return ["external policy denied provider admission"]
 
 
 class ProviderPassport(BaseModel):
@@ -340,6 +375,7 @@ async def admit_provider(name: str, body: AdmissionRequest, request: Request) ->
             )
             if passed is not True:
                 reasons.append(f"evaluation not passing: {suite}")
+        reasons.extend(await external_policy_reasons(passport, body))
         admitted = not reasons
         admission_id = uuid.uuid4()
         await connection.execute(

@@ -21,6 +21,12 @@ Define SLOs separately for edge/control overhead, memory, each model route, and 
 
 Each state owner defines RPO/RTO, encryption, retention, legal hold, restore order, and integrity verification. PostgreSQL uses PITR plus regular full backups. Vector records retain enough canonical source/embedding metadata to reindex. MCP catalog backups exclude retrievable secrets. Restore tests run monthly in an isolated environment; regional/cluster failover is exercised quarterly for required tiers.
 
+The agent database is a separate state owner. Restore it before resuming workers, hold all restored
+runs paused until version/idempotency reconciliation completes, and never infer that a side effect
+must be repeated merely because an event is absent. Mem0 backup/export, Keycloak realm recovery,
+SPIRE trust-bundle recovery, OPA bundle rollback, and workflow recovery remain owned by their
+selected product operators and must be tested with the ViewSense conformance suite.
+
 ## Incident playbooks
 
 - suspected cross-tenant retrieval: stop affected route, preserve audit evidence, revoke identities, assess all provider copies;
@@ -46,3 +52,8 @@ an all-service surge on a small cluster; production availability strategy is def
 capacity budget, disruption budget, and tested rollback.
 
 Trust Envelope failures are separated into missing context, unsupported version, tenant inconsistency, delegation denial, expired token, wrong audience, and insufficient scope. They are security signals and must not trigger fallback to an unsigned header or a less-restricted provider.
+
+Product readiness is read from `fabric/product-catalog.json`: `validated` has repository evidence,
+`configuration-ready` has an executable ViewSense integration boundary but needs the selected
+environment, and `planned` is declaration-only. Render every profile with `make profile-check`.
+Never report a profile as installed merely because Helm accepts its values.

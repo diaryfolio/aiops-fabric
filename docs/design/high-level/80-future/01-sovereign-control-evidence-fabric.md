@@ -48,7 +48,10 @@ External protocol support never bypasses the Trust Envelope, provider admission,
 
 ## Agent flight recorder
 
-The planned durable agent kernel records state transitions, plan hashes, tool requests, deterministic authorization, approvals, idempotency keys, before/after side-effect evidence, budgets, checkpoints, cancellations, and final evaluation. Replay reconstructs decisions without replaying side effects. This remains `contract-only` until a persistent runtime and negative replay tests ship.
+The reference durable agent kernel now persists idempotent runs, versions, budgets, checkpoints,
+approvals, cancellations, terminal outcomes, and ordered safe events. It does not yet execute model
+plans or tools. The future flight recorder adds plan hashes, before/after side-effect evidence,
+transactional governance export, and replay reconstruction without replaying side effects.
 
 ## Sovereign cells
 
@@ -64,6 +67,9 @@ A cell is an independently operable Kubernetes installation bound to a region, c
 
 ## Maturity statement
 
-Executable foundation: Trust Envelope v1, provider passport/evaluation/evidence APIs, PostgreSQL ownership, JSON logs, mTLS/scoped tokens, reference model/memory/MCP/ingestion paths, Kubernetes packaging, and smoke tests.
+Executable foundation: Trust Envelope v1, provider passport/evaluation/evidence APIs, PostgreSQL ownership, JSON logs, mTLS/scoped tokens, reference model/memory/MCP/ingestion paths, bounded durable agent lifecycle, Kubernetes packaging, and smoke tests.
 
-Partial/contract-only: signed third-party passports, external policy engine, immutable evidence export, evaluation datasets/runners, durable agents/workflows, A2A, multi-cluster cells, confidential computing, full OTel/OpenLineage, and production provider certification.
+Partial/contract-only: autonomous agent workers, workflow adapters, signed third-party passports,
+immutable evidence export, evaluation datasets/runners, A2A, multi-cluster cells, confidential
+computing, full OTel/OpenLineage, and production provider certification. OPA and external OIDC have
+executable integration points but require enterprise conformance and operations evidence.

@@ -25,12 +25,15 @@ existing_env_value() {
 preserved_memory_db_password="$(existing_env_value VS_MEMORY_DB_PASSWORD || true)"
 preserved_registry_db_password="$(existing_env_value VS_REGISTRY_DB_PASSWORD || true)"
 preserved_governance_db_password="$(existing_env_value VS_GOVERNANCE_DB_PASSWORD || true)"
+preserved_agent_db_password="$(existing_env_value VS_AGENT_DB_PASSWORD || true)"
 
 if [[ -f "${env_file}" && -f "${pki_dir}/ca.crt" && -f "${pki_dir}/governance/tls.crt" \
+  && -f "${pki_dir}/agent-runtime/tls.crt" \
   && -f "${runtime_dir}/clients.json" ]] \
   && grep -q '"ingestion"' "${runtime_dir}/clients.json" \
   && grep -q '"can_delegate_tenant"' "${runtime_dir}/clients.json" \
-  && grep -q '^VS_GOVERNANCE_DB_PASSWORD=' "${env_file}"; then
+  && grep -q '^VS_GOVERNANCE_DB_PASSWORD=' "${env_file}" \
+  && grep -q '^VS_AGENT_DB_PASSWORD=' "${env_file}"; then
   echo "ViewSense development credentials already exist in ${runtime_dir}"
   exit 0
 fi
@@ -53,7 +56,7 @@ openssl req -x509 -new -key "${pki_dir}/ca.key" -sha256 -days 30 \
   -subj "/O=ViewSense Development/CN=ViewSense Development CA" \
   -out "${pki_dir}/ca.crt"
 
-services=(identity gateway orchestrator ingestion llm-gateway memory-gateway memory-postgres mcp-gateway mock-llm mock-mcp governance smoke)
+services=(identity gateway orchestrator ingestion llm-gateway memory-gateway memory-postgres mcp-gateway mock-llm mock-mcp governance agent-runtime smoke)
 for service in "${services[@]}"; do
   service_dir="${pki_dir}/${service}"
   mkdir -p "${service_dir}"
@@ -101,6 +104,11 @@ if [[ "${preserved_governance_db_password}" =~ ^[[:xdigit:]]{48}$ ]]; then
 else
   governance_db_password="$(random_secret)"
 fi
+if [[ "${preserved_agent_db_password}" =~ ^[[:xdigit:]]{48}$ ]]; then
+  agent_db_password="${preserved_agent_db_password}"
+else
+  agent_db_password="$(random_secret)"
+fi
 
 cat >"${runtime_dir}/clients.json" <<EOF
 {
@@ -111,7 +119,7 @@ cat >"${runtime_dir}/clients.json" <<EOF
   "llm-gateway": {"secret": "${llm_gateway_secret}", "can_delegate_tenant": true, "grants": {"mock-llm": ["provider.invoke"]}},
   "memory-gateway": {"secret": "${memory_gateway_secret}", "can_delegate_tenant": true, "grants": {"memory-postgres": ["provider.invoke"]}},
   "mcp-gateway": {"secret": "${mcp_gateway_secret}", "can_delegate_tenant": true, "grants": {"mock-mcp": ["provider.invoke"]}},
-  "smoke": {"secret": "${smoke_secret}", "tenant_id": "tenant-a", "grants": {"gateway": ["api.invoke"], "ingestion": ["ingest.write"], "memory-gateway": ["memory.read", "memory.write"], "mcp-gateway": ["mcp.admin", "mcp.invoke"], "governance": ["governance.admin", "governance.read", "evidence.write"]}}
+  "smoke": {"secret": "${smoke_secret}", "tenant_id": "tenant-a", "grants": {"gateway": ["api.invoke"], "ingestion": ["ingest.write"], "memory-gateway": ["memory.read", "memory.write"], "mcp-gateway": ["mcp.admin", "mcp.invoke"], "governance": ["governance.admin", "governance.read", "evidence.write"], "agent-runtime": ["agent.run", "agent.approve"]}}
 }
 EOF
 
@@ -127,6 +135,7 @@ VS_SMOKE_CLIENT_SECRET=${smoke_secret}
 VS_MEMORY_DB_PASSWORD=${memory_db_password}
 VS_REGISTRY_DB_PASSWORD=${registry_db_password}
 VS_GOVERNANCE_DB_PASSWORD=${governance_db_password}
+VS_AGENT_DB_PASSWORD=${agent_db_password}
 EOF
 
 chmod 0600 "${env_file}"

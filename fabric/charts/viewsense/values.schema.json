@@ -5,9 +5,9 @@
   "properties": {
     "products": {
       "type": "object",
-      "required": ["identity", "llm", "memory", "ingestion", "agentRuntime", "workflow", "mcp"],
+      "required": ["identity", "llm", "memory", "ingestion", "agentRuntime", "workflow", "mcp", "policy", "workloadIdentity", "observability"],
       "properties": {
-        "identity": {"type": "object", "properties": {"product": {"enum": ["development", "external-oidc"]}}},
+        "identity": {"type": "object", "required": ["product", "issuer", "jwksUrl", "audience", "tenantClaim", "scopeClaim", "externalEgress"], "properties": {"product": {"enum": ["development", "external-oidc", "keycloak-oidc"]}, "issuer": {"type": "string"}, "jwksUrl": {"type": "string"}, "audience": {"type": "string", "minLength": 1}, "tenantClaim": {"type": "string", "minLength": 1}, "scopeClaim": {"type": "string", "minLength": 1}, "externalEgress": {"$ref": "#/$defs/externalEgress"}}},
         "llm": {
           "type": "object",
           "required": ["product", "endpoint", "audience"],
@@ -22,16 +22,30 @@
           "type": "object",
           "required": ["product", "endpoint", "audience"],
           "properties": {
-            "product": {"enum": ["postgres-pgvector", "mem0-compatible-external"]},
+            "product": {"enum": ["postgres-pgvector", "mem0-oss-adapter", "mem0-platform-adapter"]},
             "endpoint": {"type": "string", "pattern": "^https://"},
             "audience": {"type": "string", "minLength": 1},
-            "externalEgress": {"$ref": "#/$defs/externalEgress"}
+            "externalEgress": {"$ref": "#/$defs/externalEgress"},
+            "mem0": {
+              "type": "object",
+              "required": ["mode", "endpoint", "credentialsSecret", "externalEgress", "inCluster"],
+              "properties": {
+                "mode": {"enum": ["oss", "platform"]},
+                "endpoint": {"type": "string", "pattern": "^https://"},
+                "credentialsSecret": {"type": "string", "minLength": 1},
+                "externalEgress": {"$ref": "#/$defs/externalEgress"},
+                "inCluster": {"type": "object", "required": ["enabled", "namespace", "podLabels", "port"], "properties": {"enabled": {"type": "boolean"}, "namespace": {"type": "string", "minLength": 1}, "podLabels": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string"}}, "port": {"type": "integer", "minimum": 1, "maximum": 65535}}}
+              }
+            }
           }
         },
         "ingestion": {"type": "object", "properties": {"product": {"enum": ["builtin-deterministic", "unstructured-compatible-external"]}}},
-        "agentRuntime": {"type": "object", "properties": {"enabled": {"type": "boolean"}, "product": {"enum": ["contract-only", "builtin", "langgraph-compatible-external"]}}},
+        "agentRuntime": {"type": "object", "properties": {"enabled": {"type": "boolean"}, "product": {"enum": ["builtin", "langgraph-compatible-external"]}}},
         "workflow": {"type": "object", "properties": {"enabled": {"type": "boolean"}, "product": {"enum": ["none", "n8n", "temporal", "argo-workflows", "external"]}}},
-        "mcp": {"type": "object", "required": ["mockProviderEnabled", "allowedHosts"]}
+        "mcp": {"type": "object", "required": ["mockProviderEnabled", "allowedHosts"]},
+        "policy": {"type": "object", "required": ["enabled", "product", "endpoint", "opa"], "properties": {"enabled": {"type": "boolean"}, "product": {"enum": ["builtin", "opa-sidecar"]}, "endpoint": {"type": "string"}, "opa": {"type": "object", "required": ["image"], "properties": {"image": {"type": "string", "minLength": 1}}}}},
+        "workloadIdentity": {"type": "object", "required": ["product", "spiffe"], "properties": {"product": {"enum": ["static-development-pki", "spire"]}, "spiffe": {"type": "object", "required": ["trustDomain", "socketPath"]}}},
+        "observability": {"type": "object", "required": ["product"], "properties": {"product": {"enum": ["json-stdout", "otel-collector", "external-otel"]}, "otlpEndpoint": {"type": "string"}}}
       }
     },
     "modules": {

@@ -5,4 +5,12 @@ The identity module defines external enterprise federation and internal workload
 - Runtime: `viewsense_identity`
 - Contract: OAuth client credentials with exact audience and scopes
 - Helm selection: `products.identity.product`
-- Production choice: enterprise OIDC plus renewable workload identity and external secrets
+- Edge federation: `external-oidc` or `keycloak-oidc` validates issuer, JWKS, audience, scopes,
+  subject, and a configured tenant claim before ViewSense creates an internal Trust Envelope.
+- Workload identity: `static-development-pki` for tests or a separately operated SPIRE/mesh
+  installation for renewable production mTLS identities.
+- Production choice: enterprise OIDC plus renewable workload identity and external secrets.
+
+Keycloak is an optional OIDC provider, not part of the ViewSense trust core. SPIRE is a
+cluster-scoped managed dependency, not an application sidecar bundled into every pod. See
+`deploy/integrations/keycloak.md` and `deploy/integrations/spire.md`.

@@ -65,9 +65,14 @@ ViewSense is not another foundation model, vector database, low-code workflow ed
 
 ## Current maturity
 
-The repository contains an executable reference covering secure APIs, model routing, memory, MCP governance, ingestion, Kubernetes deployment, structured logs, and end-to-end tests. The Trust Envelope and governance foundation provide signed tenant delegation, provider passports, evaluation admission, and append-only evidence metadata.
+The repository contains an executable reference covering secure APIs, model routing, PostgreSQL/pgvector memory, a Mem0 adapter, MCP governance, ingestion, durable bounded agent runs, Kubernetes deployment, structured logs, and end-to-end tests. The Trust Envelope and governance foundation provide signed tenant delegation, provider passports, evaluation admission, optional OPA decisions, and append-only evidence metadata.
 
-Enterprise identity federation, production workload identity, real model providers, durable agent/workflow execution, full telemetry, high availability, disaster recovery, confidential computing, and multi-cluster sovereign cells remain staged production capabilities. The technical documentation labels reference, partial, and contract-only components explicitly.
+External OIDC/Keycloak configuration is available at the edge, and Helm profiles record SPIRE,
+OpenTelemetry, and workflow integration intent. Production-grade identity operations, SPIRE/mesh
+rollout, autonomous agent workers, workflow adapters, real model certification, full telemetry,
+high availability, disaster recovery, confidential computing, and multi-cluster sovereign cells
+remain staged capabilities. The catalog labels validated, configuration-ready, and planned products
+explicitly.
 
 ## Intended users
 
@@ -77,4 +82,6 @@ Enterprise identity federation, production workload identity, real model provide
 - Application teams wanting stable APIs rather than provider-specific integrations.
 - Data owners requiring lineage, retention, residency, and deletion controls.
 
-For architecture, installation, and engineering details, see the [technical guide](TECHNICAL_README.md). For copy-paste validation, see the [test guide](tests/README.md).
+For the current embedded/integratable product list, see the [product catalog](fabric/PRODUCTS.md).
+For architecture, installation, and engineering details, see the [technical guide](TECHNICAL_README.md).
+For copy-paste validation, see the [test guide](tests/README.md).

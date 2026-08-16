@@ -1,0 +1,16 @@
+products:
+  memory:
+    product: mem0-oss-adapter
+    endpoint: https://memory-mem0:8443
+    audience: memory-mem0
+    mem0:
+      mode: oss
+      endpoint: https://mem0.memory-platform.svc:8443
+      credentialsSecret: mem0-credentials
+      externalEgress: []
+      inCluster:
+        enabled: true
+        namespace: memory-platform
+        podLabels:
+          app.kubernetes.io/name: mem0
+        port: 8443

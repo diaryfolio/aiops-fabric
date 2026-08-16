@@ -73,6 +73,13 @@ spec:
             - {name: VS_IDENTITY_CLIENTS_FILE, value: /run/viewsense/identity/clients.json}
             {{- else if eq $name "gateway" }}
             - {name: VS_ORCHESTRATOR_URL, value: "https://orchestrator:8443"}
+            {{- if ne $.Values.products.identity.product "development" }}
+            - {name: VS_EXTERNAL_OIDC_ISSUER, value: {{ $.Values.products.identity.issuer | quote }} }
+            - {name: VS_EXTERNAL_OIDC_JWKS_URL, value: {{ $.Values.products.identity.jwksUrl | quote }} }
+            - {name: VS_EXTERNAL_OIDC_AUDIENCE, value: {{ $.Values.products.identity.audience | quote }} }
+            - {name: VS_EXTERNAL_OIDC_TENANT_CLAIM, value: {{ $.Values.products.identity.tenantClaim | quote }} }
+            - {name: VS_EXTERNAL_OIDC_SCOPE_CLAIM, value: {{ $.Values.products.identity.scopeClaim | quote }} }
+            {{- end }}
             {{- else if eq $name "orchestrator" }}
             - {name: VS_MEMORY_URL, value: "https://memory-gateway:8443"}
             - {name: VS_LLM_URL, value: "https://llm-gateway:8443"}
@@ -86,11 +93,21 @@ spec:
             - {name: VS_MEMORY_PROVIDER_AUDIENCE, value: {{ $.Values.products.memory.audience | quote }}}
             {{- else if eq $name "memory-postgres" }}
             - {name: VS_DATABASE_URL, valueFrom: {secretKeyRef: {name: {{ $.Values.datastores.memory.credentialsSecret }}, key: url}}}
+            {{- else if eq $name "memory-mem0" }}
+            - {name: VS_MEM0_URL, value: {{ $.Values.products.memory.mem0.endpoint | quote }} }
+            - {name: VS_MEM0_MODE, value: {{ $.Values.products.memory.mem0.mode | quote }} }
+            - {name: VS_MEM0_API_KEY, valueFrom: {secretKeyRef: {name: {{ $.Values.products.memory.mem0.credentialsSecret }}, key: api-key}}}
             {{- else if eq $name "mcp-gateway" }}
             - {name: VS_DATABASE_URL, valueFrom: {secretKeyRef: {name: {{ $.Values.datastores.registry.credentialsSecret }}, key: url}}}
             - {name: VS_MCP_ALLOWED_HOSTS, value: {{ $.Values.products.mcp.allowedHosts | quote }}}
             {{- else if eq $name "governance" }}
             - {name: VS_DATABASE_URL, valueFrom: {secretKeyRef: {name: {{ $.Values.datastores.governance.credentialsSecret }}, key: url}}}
+            - {name: VS_POLICY_MODE, value: {{ if $.Values.products.policy.enabled }}{{ $.Values.products.policy.product | quote }}{{ else }}"builtin"{{ end }}}
+            {{- if $.Values.products.policy.enabled }}
+            - {name: VS_POLICY_URL, value: {{ $.Values.products.policy.endpoint | quote }}}
+            {{- end }}
+            {{- else if eq $name "agent-runtime" }}
+            - {name: VS_DATABASE_URL, valueFrom: {secretKeyRef: {name: {{ $.Values.datastores.agent.credentialsSecret }}, key: url}}}
             {{- end }}
           volumeMounts:
             - {name: tls, mountPath: /run/viewsense/tls, readOnly: true}
@@ -109,12 +126,31 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: {{ $.Values.global.podSecurity.runAsUser }}
+        {{- if and (eq $name "governance") $.Values.products.policy.enabled (eq $.Values.products.policy.product "opa-sidecar") }}
+        - name: opa
+          image: {{ $.Values.products.policy.opa.image | quote }}
+          imagePullPolicy: IfNotPresent
+          args: ["run", "--server", "--addr=0.0.0.0:8181", "/policy/provider.rego"]
+          ports: [{name: opa, containerPort: 8181}]
+          readinessProbe: {httpGet: {path: "/health?bundles=true", port: opa}, initialDelaySeconds: 2, periodSeconds: 3}
+          resources: {requests: {cpu: 25m, memory: 64Mi}, limits: {cpu: 250m, memory: 192Mi}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+          volumeMounts: [{name: opa-policy, mountPath: /policy, readOnly: true}]
+        {{- end }}
       volumes:
         - {name: tls, secret: {secretName: {{ $module.tlsSecret }}, defaultMode: 0444}}
         {{- if eq $name "identity" }}
         - {name: identity-material, secret: {secretName: identity-material, defaultMode: 0444}}
         {{- else }}
         - {name: identity-public, secret: {secretName: {{ $.Values.global.identityPublicSecret }}, defaultMode: 0444}}
+        {{- end }}
+        {{- if and (eq $name "governance") $.Values.products.policy.enabled (eq $.Values.products.policy.product "opa-sidecar") }}
+        - {name: opa-policy, configMap: {name: viewsense-opa-policy}}
         {{- end }}
 {{- end }}
 {{- end }}
