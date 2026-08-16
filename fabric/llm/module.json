@@ -11,8 +11,8 @@
     "providers": [
       {"name": "mock-openai-compatible", "status": "bundled"},
       {"name": "openai-adapter", "status": "bundled"},
-      {"name": "vllm", "status": "external"},
-      {"name": "openai-compatible-external", "status": "external"}
+      {"name": "vllm", "status": "planned"},
+      {"name": "openai-compatible-external", "status": "planned"}
     ]
   }
 }

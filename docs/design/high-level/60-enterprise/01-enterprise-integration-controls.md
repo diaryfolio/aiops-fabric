@@ -2,6 +2,21 @@
 
 This document is the acceptance checklist for an enterprise installation. A feature is “catered for” when ViewSense defines its boundary and integration contract; a production deployment is ready only when the enterprise-selected implementation is configured and the evidence test passes.
 
+```mermaid
+flowchart LR
+    Identity["Enterprise identity"] --> Edge["API management + edge"]
+    Edge --> Policy["authorization + data policy"]
+    Policy --> Runtime["model / memory / tool runtime"]
+    Runtime --> Evidence["logs + evidence API"]
+    Evidence --> Collector["collector / SIEM"]
+    Collector --> Ops["SLO, incident, compliance evidence"]
+    Ops --> Change["GitOps/config promotion"]
+    Change --> Policy
+```
+
+The table below is a production acceptance contract. It is not a list of capabilities already
+implemented by the reference.
+
 | Domain | Required capability | Integration contract | Acceptance evidence |
 |---|---|---|---|
 | SSO | OIDC federation, MFA/conditional access at IdP, group/role claims | standard OIDC discovery/JWKS; issuer/audience/claim mapping config | login, logout, expiry, group change, disabled user, wrong issuer/audience tests |
@@ -26,7 +41,7 @@ This document is the acceptance checklist for an enterprise installation. A feat
 | provider admission | expiring passports, capabilities, evaluations, residency, provenance and revocation | provider passport/evaluation APIs plus policy decision | expired/revoked/unevaluated provider cannot receive new traffic |
 | execution evidence | payload-minimized lineage and decision events | append-only evidence API and immutable export | reconstruct route/policy/approval sequence without sensitive payloads |
 
-## JSON log schema
+## Target JSON log schema
 
 Application containers write one JSON object per line and never write multiline human-formatted access logs. The reference middleware emits:
 
@@ -50,6 +65,11 @@ Application containers write one JSON object per line and never write multiline 
   "outcome": "success"
 }
 ```
+
+The current middleware emits this core shape but uses the verified development tenant ID and
+principal rather than a production pseudonym, does not add route/provider or retry fields, and only
+records inbound `traceparent`. Production must pseudonymize identifiers and enrich missing fields in
+the application or collector without exposing payloads.
 
 Collectors read container stdout using the Kubernetes metadata API and enrich with cluster, namespace, pod, image digest, node, and region. Routing can use OTLP, Elastic Common Schema transforms, Splunk HEC, or another sink-specific exporter. Applications do not embed Elastic/Splunk SDKs, preserving backend replaceability.
 
@@ -76,20 +96,38 @@ successful rendering.
 
 ## Telemetry deployment pattern
 
-Applications emit JSON stdout, OpenMetrics, and OTLP using vendor-neutral semantic conventions. A per-cluster collector layer batches, redacts, samples, and routes data to enterprise systems. Security audit is not sampled. Tail sampling can retain errors/slow traces while limiting routine prompt-path telemetry cost. Collector unavailability uses bounded buffers and must never fill application disks; regulated operations can be configured to fail closed when mandatory audit cannot be delivered.
+```mermaid
+flowchart TB
+    Apps["ViewSense applications"] -->|"implemented"| Stdout["JSON stdout"]
+    Stdout -->|"collector-managed"| Logs["Elastic / Splunk / SIEM"]
+    Apps -. "planned native export" .-> OTLP["OTLP traces/metrics"]
+    Apps -. "planned endpoint" .-> Prom["OpenMetrics"]
+    OTLP --> Collector["OpenTelemetry Collector"]
+    Prom --> Collector
+    Collector --> Backends["enterprise observability backends"]
+    Governance["Evidence API"] -. "planned immutable export" .-> Audit["independent audit sink"]
+```
+
+Today the integration boundary is JSON container stdout, which a platform-managed OpenTelemetry
+Collector, Fluent Bit, or Vector deployment can ingest. `products.observability.otlpEndpoint` is
+reserved intent and is not consumed by application code. Native OpenMetrics, propagated traces,
+OTLP exporters, sampling, delivery acknowledgement, and fail-closed audit delivery are planned.
 
 ## Current reference status
 
-Implemented now: JSON access/runtime logs, request correlation propagation, mTLS,
+Implemented now: JSON access/runtime logs, `X-Request-ID` correlation, certificate-required TLS,
 audience/scoped tokens, signed Trust Envelope tenant delegation, external OIDC edge verification,
-built-in/OPA provider admission, append-only safe evidence metadata, durable bounded agent state,
+built-in provider admission plus an OPA decision boundary, append-only safe evidence metadata,
+durable bounded agent state,
 PostgreSQL/pgvector and Mem0 adapter boundaries, restricted pods, network policies, API schemas,
 profile rendering, and positive/negative smoke tests. Configuration-ready but environment-dependent:
-the credential-isolated OpenAI adapter, Keycloak/generic OIDC, SPIRE consumption architecture, OPA
-sidecar, Mem0, and collector routing. OpenAI acceptance additionally requires a provider project/key,
+the credential-isolated OpenAI adapter, Keycloak/generic OIDC, OPA sidecar, Mem0, and collector
+ingestion of JSON stdout. SPIRE/SDS consumption, native local-model adapters, and native MCP transport
+remain planned. OpenAI acceptance additionally requires a provider project/key,
 residency and retention review, egress enforcement, spend limits, rotation, and the documented live
 memory-grounding test.
-Planned: workflow adapters, SCIM, signed third-party passports, evaluation runners/datasets,
-immutable evidence/audit export, full OTel instrumentation/exporters, external secrets, HA/DR,
+Planned: workflow adapters, SCIM, runtime enforcement of provider admission, signed third-party
+passports, evaluation runners/datasets, immutable evidence/audit export, full OTel
+instrumentation/exporters, external secrets, HA/DR,
 autoscaling, supply-chain admission, and ITSM. Production readiness requires selecting and testing
 those integrations; the local issuer and mock providers do not satisfy them.

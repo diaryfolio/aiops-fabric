@@ -11,10 +11,12 @@ products:
     product: opa-sidecar
     endpoint: http://127.0.0.1:8181/v1/data/viewsense/provider/admit
   workloadIdentity:
+    # Planned intent: the current chart does not mount or consume the Workload API socket.
     product: spire
     spiffe:
       trustDomain: viewsense.local
       socketPath: unix:///spiffe-workload-api/spire-agent.sock
   observability:
+    # JSON stdout is collectable now; this endpoint is reserved until native OTLP export ships.
     product: otel-collector
     otlpEndpoint: http://otel-collector.observability.svc:4317

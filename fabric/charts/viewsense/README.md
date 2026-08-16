@@ -32,3 +32,8 @@ The enterprise profile declares desired integrations; it does not install cluste
 SPIRE, n8n, or OpenTelemetry operators. Platform teams install those upstream products with pinned
 versions and then run the conformance checks in `tests/README.md`. OPA is different: when selected as
 `opa-sidecar`, the chart installs a local fail-closed policy decision point beside governance.
+
+The SPIRE socket/trust-domain, workflow product, and `otlpEndpoint` values are reserved intent: no
+SVID consumer, workflow adapter, or native application OTLP exporter is rendered today. JSON stdout
+can be collected independently. `vllm` and generic external LLM values likewise require a future
+ViewSense-compatible authentication adapter and must not be treated as a working vanilla endpoint.

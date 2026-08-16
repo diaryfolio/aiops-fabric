@@ -12,6 +12,10 @@ Product packaging uses four explicit modes: `bundled`, `adapter`, `managed-depen
 its upstream product is separate; a managed dependency is installed/operated at platform scope; an
 external product is reached through an API. Product selection never implies product installation.
 
+Implementation truth is maintained in
+[Implementation Conformance](00-implementation-conformance.md). Target-state requirements in this
+design are not evidence that a capability is deployed.
+
 ## System boundaries
 
 | Plane | Responsibility | Must not own |
@@ -23,7 +27,7 @@ external product is reached through an API. Product selection never implies prod
 | Security/operations | identity, policy decisions, secrets, telemetry, audit | business workflow semantics |
 | Governance/evidence | provider passports, evaluations, admissions, safe lineage events | provider payload data or execution credentials |
 
-## Mandatory invariants
+## Mandatory target invariants
 
 1. All capabilities have versioned network contracts and machine-readable schemas.
 2. Each stateful domain owns its database; other domains use its API.
@@ -31,9 +35,14 @@ external product is reached through an API. Product selection never implies prod
 4. Provider selection is configuration/policy, never compiled into a caller.
 5. An adapter must pass the same contract suite before it can replace another provider.
 6. Kubernetes is the canonical packaging model; local Compose must preserve the same service boundaries.
-7. A provider failure is contained by deadlines, bounded retries, circuit breaking, and no implicit fallback across data-residency classes.
+7. A provider failure is contained by deadlines, bounded retries, circuit breaking, and no implicit
+   fallback across data-residency classes. The reference implements bounded client timeouts and no
+   implicit fallback; retry/circuit-breaker policy remains a production integration.
 
 ## Reference request path
+
+This sequence shows the optional OpenAI-selected route. The deterministic regression route stops at
+the LLM gateway's mock adapter and is the default after a base deployment.
 
 ```mermaid
 sequenceDiagram
@@ -47,7 +56,7 @@ sequenceDiagram
     Client->>Edge: POST /v1/responses + tenant token
     Edge->>Orchestrator: mTLS + audience token + derived tenant
     Orchestrator->>Memory: search through stable memory API
-    Memory-->>Orchestrator: policy-filtered memories
+    Memory-->>Orchestrator: tenant/owner-bound memories
     Orchestrator->>LLM: OpenAI-compatible completion request
     LLM->>OpenAIAdapter: mTLS + aud: openai-adapter + provider.invoke
     OpenAIAdapter->>OpenAI: Bearer provider key + minimized request
@@ -60,31 +69,35 @@ sequenceDiagram
 
 ## Design set
 
-1. [Objective and principles](10-overall/01-objective-principles.md)
-2. [Runtime topology and flows](10-overall/02-runtime-topology-flow.md)
-3. [API and integration standards](10-overall/03-api-integration-standards.md)
-4. [Component and ownership model](10-overall/04-component-breakdown.md)
-5. [Operations baseline](10-overall/05-operations-and-roadmap.md)
-6. [Kubernetes deployment and sizing](20-deployment/01-deployment-topology-sizing.md)
-7. [Zero-trust security model](30-security/01-zero-trust.md)
-8. [Day-2 operations](40-ops/01-day2-operations-sre.md)
-9. [Roadmap and maturity](50-roadmap/01-roadmap-maturity.md)
-10. [Enterprise integration and control matrix](60-enterprise/01-enterprise-integration-controls.md)
-11. [Agent runtime, ingestion, and workflow design](70-agentic/01-agent-runtime-ingestion-workflows.md)
-12. [Sovereign control and evidence fabric](80-future/01-sovereign-control-evidence-fabric.md)
+1. [Implementation conformance](00-implementation-conformance.md)
+2. [Objective and principles](10-overall/01-objective-principles.md)
+3. [Runtime topology and flows](10-overall/02-runtime-topology-flow.md)
+4. [API and integration standards](10-overall/03-api-integration-standards.md)
+5. [Component and ownership model](10-overall/04-component-breakdown.md)
+6. [Operations baseline](10-overall/05-operations-and-roadmap.md)
+7. [Kubernetes deployment and sizing](20-deployment/01-deployment-topology-sizing.md)
+8. [Zero-trust security model](30-security/01-zero-trust.md)
+9. [Day-2 operations](40-ops/01-day2-operations-sre.md)
+10. [Roadmap and maturity](50-roadmap/01-roadmap-maturity.md)
+11. [Enterprise integration and control matrix](60-enterprise/01-enterprise-integration-controls.md)
+12. [Agent runtime, ingestion, and workflow design](70-agentic/01-agent-runtime-ingestion-workflows.md)
+13. [Sovereign control and evidence fabric](80-future/01-sovereign-control-evidence-fabric.md)
 
 ## Implemented reference slice
 
 The current code proves edge-to-orchestrator-to-memory/LLM flow, a credential-isolated OpenAI
 adapter, PostgreSQL/pgvector and Mem0
-memory boundaries, MCP registration/invocation, persistent bounded agent lifecycle, signed Trust
-Envelope tenant delegation, external OIDC validation, built-in or OPA admission, append-only safe
+memory boundaries, MCP registration and ViewSense tool-provider invocation, persistent bounded
+agent lifecycle, signed Trust
+Envelope tenant delegation, external OIDC validation, built-in admission plus an OPA decision
+boundary, append-only safe
 evidence events, mTLS, scoped tokens, database ownership, provider host allow-listing, network
 segmentation, and Kubernetes deployment. The OpenAI adapter is configuration-ready and its live
 test requires a customer key; the deterministic mock remains the default regression provider.
 When the OpenAI adapter is selected, its local default model comes from the non-secret
 `config/models.env` and is currently `gpt-5.6-luna`; callers cannot override that server-controlled
-route through the public request model field.
+route through the public request model field. Built-in provider admission is executable; OPA has an
+executable decision boundary and chart sidecar but remains environment-dependent.
 Keycloak and SPIRE are documented managed integrations;
 their operators are not bundled. Autonomous agent workers, workflow adapters, cryptographic
 third-party passport verification, immutable evidence export, full OpenTelemetry, HA, backups, and

@@ -4,6 +4,17 @@
 
 ViewSense is a sovereign AI control fabric. It does not compete with model, memory, workflow, or observability products; it owns the portable trust, policy, admission, routing, and evidence layer that keeps those products replaceable.
 
+```mermaid
+flowchart TB
+    Experience["Experience APIs"] --> Control["Sovereign control<br/>policy, admission, routing"]
+    Control --> Execution["Execution<br/>responses, ingestion, agent lifecycle"]
+    Execution --> Providers["Replaceable providers"]
+    Control --> Evidence["Evidence API"]
+    Execution --> Evidence
+    Providers --> Evidence
+    Evidence -. "planned immutable export" .-> Independent["independently controlled sink"]
+```
+
 ## Target planes
 
 | Plane | Responsibilities | Durable owner |
@@ -25,6 +36,10 @@ Production replaces the development issuer with enterprise token exchange/worklo
 A provider passport is a versioned, expiring catalog resource for LLM, embedding, memory, MCP, workflow, agent, or ingestion providers. It declares HTTPS endpoint, protocols, capabilities, residency, accepted data classifications, operational owner, image digest, SBOM/provenance references, and status. It is descriptive evidence, not permission by itself.
 
 Admission evaluates a passport against required capabilities, allowed residency, permitted classifications, expiry/revocation, and named evaluation evidence. The reference governance API stores passports, evaluation records, admissions, and append-only payload-minimized evidence events in its owned PostgreSQL database. Production adds signature verification, external policy decisions, immutable/WORM evidence export, and admission-controller enforcement.
+
+The current LLM, memory, and MCP gateways do not consult the governance database during routing.
+Connecting admitted state to route reconciliation is planned; an admission record is therefore
+evidence, not yet a live traffic switch.
 
 ## Evidence and lineage
 
@@ -56,6 +71,16 @@ transactional governance export, and replay reconstruction without replaying sid
 ## Sovereign cells
 
 A cell is an independently operable Kubernetes installation bound to a region, classification, or business unit. It keeps payload data and provider credentials local while accepting signed policy/provider metadata and exporting only approved evidence. Future profiles cover offline bundles, federated discovery, remote attestation, confidential runtimes, cell failover, and cryptographic configuration promotion.
+
+```mermaid
+flowchart LR
+    Global["signed policy/provider metadata"] --> CellA["Cell A<br/>region/classification"]
+    Global --> CellB["Cell B<br/>region/classification"]
+    CellA -. "approved evidence only" .-> Audit["global evidence plane"]
+    CellB -. "approved evidence only" .-> Audit
+```
+
+Sovereign cells are target state; the repository ships one development namespace only.
 
 ## Non-goals
 

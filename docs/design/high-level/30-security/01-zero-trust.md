@@ -4,7 +4,22 @@
 
 Compromise of one component must not grant implicit access to another component, another tenant, provider credentials, or a different data plane. Controls are layered: network reachability, workload TLS identity, audience/scoped authorization, tenant/data policy, provider egress policy, and audit.
 
-## Trust boundaries and controls
+```mermaid
+flowchart LR
+    Request["Request"] --> Net["NetworkPolicy reachability"]
+    Net --> TLS["CA-validated mutual TLS"]
+    TLS --> JWT["issuer + aud + scope + expiry"]
+    JWT --> Envelope["signed tenant Trust Envelope"]
+    Envelope --> Resource["tenant/owner database predicate"]
+    Resource --> Provider["configured provider/egress boundary"]
+    Provider --> Evidence["JSON log + safe evidence metadata"]
+```
+
+In the development reference, the certificate proves possession of a CA-issued client certificate;
+the JWT supplies the application workload identity. Binding a SPIFFE ID from the certificate to the
+token subject is a production integration, not current application behavior.
+
+## Target trust boundaries and controls
 
 | Boundary | Authentication | Authorization | Containment |
 |---|---|---|---|
@@ -26,6 +41,11 @@ SPIRE is a cluster workload-identity authority, not an application library or pr
 Production installs its server/agent lifecycle separately, maps each service account to a unique
 SPIFFE ID, rotates SVIDs, and presents them through an SDS-capable proxy or service mesh. ViewSense
 still requires exact token audience/scopes and tenant policy after mTLS succeeds.
+
+The shipped development manifests use separate service certificates and credentials, disable
+service-account token mounts, and require TLS for application APIs. PostgreSQL connections in the
+development base use password authentication and NetworkPolicy but are not TLS-enabled; production
+must supply database TLS verification, rotated credentials, and encrypted storage before acceptance.
 
 ## Tenant, Trust Envelope, and authorization
 
@@ -87,3 +107,16 @@ CI generates SBOMs, scans dependencies/images/IaC, signs artifacts and provenanc
 - OpenAI key absent/revoked, upstream 401/429/timeout/malformed response, caller model override,
   upstream URL/redirect manipulation, direct non-adapter egress, and credential absence from all
   gateway/orchestrator pod specifications and logs.
+
+```mermaid
+flowchart TD
+    Attempt["Protected operation"] --> Cert{"trusted client certificate?"}
+    Cert -->|no| Deny["deny"]
+    Cert -->|yes| Audience{"valid issuer, audience, scope?"}
+    Audience -->|no| Deny
+    Audience -->|yes| Tenant{"valid signed tenant envelope?"}
+    Tenant -->|no| Deny
+    Tenant -->|yes| Policy{"resource/provider policy passes?"}
+    Policy -->|no or unavailable| Deny
+    Policy -->|yes| Allow["bounded call"]
+```

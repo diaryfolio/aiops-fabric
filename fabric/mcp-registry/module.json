@@ -10,7 +10,7 @@
     "dataOwnership": ["MCP server catalog", "provider metadata"],
     "providers": [
       {"name": "mock-mcp", "status": "bundled"},
-      {"name": "certified-external-mcp", "status": "external"}
+      {"name": "mcp-streamable-http-adapter", "status": "planned"}
     ]
   }
 }

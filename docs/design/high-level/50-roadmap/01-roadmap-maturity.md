@@ -4,6 +4,14 @@
 
 Build thin end-to-end slices and prove replaceability/security with tests before adding providers. Dates depend on enterprise controls and provider choices; exit criteria, not elapsed weeks, determine readiness.
 
+```mermaid
+flowchart LR
+    P0["Phase 0<br/>executable reference<br/>substantially shipped"] --> P1["Phase 1<br/>operable trust controls<br/>partial"]
+    P1 --> P2["Phase 2<br/>two certified providers<br/>planned"]
+    P2 --> P3["Phase 3<br/>autonomous agents + workflows<br/>planned"]
+    P3 --> P4["Phase 4<br/>regulated cells + scale<br/>planned"]
+```
+
 ## Phase 0 — executable contract foundation (current)
 
 Deliver edge, orchestrator, LLM/memory/MCP gateways, mock providers, PostgreSQL/pgvector memory,
@@ -14,7 +22,12 @@ Exit: a clean cluster can deploy into an isolated namespace; missing authorizati
 
 ## Phase 1 — trustworthy control foundation
 
-Deliver signed Trust Envelopes, provider passport/evaluation/evidence APIs, committed schemas, standardized errors/idempotency/deadlines, separate signed images/SBOMs, and the operator skeleton. External OIDC and OPA now have executable boundaries; complete Keycloak/other IdP conformance, SPIFFE/mesh mTLS consumption, external secrets, OpenTelemetry, GitOps overlays, PDB/HPA, and HA data services.
+Shipped portions are signed Trust Envelopes, provider passport/evaluation/evidence APIs, committed
+JSON schemas, external OIDC verification, and an OPA admission boundary. Remaining work includes
+standardized errors/idempotency/deadlines across all APIs, runtime enforcement of admission,
+separate signed images/SBOMs, an operator skeleton, IdP conformance, SPIFFE/mesh identity
+consumption, database TLS, external secrets, OpenTelemetry, GitOps overlays, PDB/HPA, and HA data
+services.
 
 Exit: header-based tenant spoofing is denied; identity/key rotation, provider admission/revocation, evidence export, negative security tests, telemetry continuity, backup/restore, rolling upgrade, and rollback pass in staging.
 

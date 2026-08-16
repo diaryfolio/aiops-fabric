@@ -1,6 +1,9 @@
 # Observability Module
 
-The reference implements vendor-neutral JSON Lines runtime/request logs and correlation propagation. Production metrics, distributed traces, immutable audit routing, buffering, redaction, and Elastic/Splunk exporters belong in an OTel-compatible collector layer.
+The reference implements vendor-neutral JSON Lines runtime/request logs and `X-Request-ID`
+propagation. It records inbound `traceparent` but does not propagate distributed traces. Production
+metrics, tracing, immutable audit routing, buffering, redaction, and Elastic/Splunk exporters remain
+collector/application integration work.
 
 - Runtime foundation: `viewsense_common.logging`
 - Helm selection: future observability overlay; no collector is bundled yet

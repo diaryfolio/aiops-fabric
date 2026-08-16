@@ -13,15 +13,15 @@ This repository contains the architecture and an executable Kubernetes reference
 - MCP registry and invocation gateway with a test provider;
 - a persistent bounded agent runtime with idempotent creation, checkpoints, approval, cancellation,
   optimistic concurrency, budgets, and ordered event history;
-- short-lived, audience-bound workload tokens plus mutual TLS on every API hop;
+- short-lived, audience-bound workload tokens plus mutual TLS on every internal API hop;
 - optional external OIDC/Keycloak verification at the edge and OPA provider-admission decisions;
 - deny-by-default Kubernetes network policies and separate data stores;
 - cryptographically bound Trust Envelope delegation plus provider passport, evaluation-admission, and safe evidence APIs.
 
 The mock LLM and deterministic embedding are test adapters, not production AI models. The OpenAI
 adapter provides a real optional cloud path without exposing its key outside the provider pod.
-Replace providers with vLLM, Azure OpenAI, Mem0, or another contract-conforming implementation
-without changing callers.
+The contract permits future vLLM, Ollama, Azure OpenAI, and other adapters without changing callers;
+only the mock and OpenAI LLM paths ship today. Mem0 has an executable adapter boundary.
 
 ## Architecture
 
@@ -31,19 +31,22 @@ flowchart LR
     G -->|"aud: orchestrator"| O["Orchestrator"]
     O -->|"memory API"| MG["Memory gateway"]
     O -->|"OpenAI-compatible API"| LG["LLM gateway"]
-    O -->|"MCP invocation API"| XG["MCP gateway"]
+    T["Admin/test client"] -->|"registry + tool-provider API"| XG["MCP gateway"]
     AR["Durable agent API"] --> AGDB[("Agent PostgreSQL")]
     A["Platform governance client"] -->|"passport / evaluation / evidence APIs"| V["Governance API"]
     MG --> MP["Memory provider adapter"]
-    LG --> LP["Local or cloud LLM adapter"]
-    XG --> XP["Isolated MCP server"]
+    LG --> LP["Mock or OpenAI adapter"]
+    XG --> XP["ViewSense mock tool provider"]
+    LG -. "planned adapter" .-> Local["vLLM/Ollama/local runtime"]
+    XG -. "planned protocol adapter" .-> NativeMCP["MCP Streamable HTTP server"]
     MP --> PGV[("PostgreSQL + pgvector")]
     XG --> PGR[("Registry PostgreSQL")]
     V --> PG[("Governance PostgreSQL")]
     I["Enterprise IdP / workload issuer"] -.-> G & O & MG & LG & XG & V & MP & LP & XP
 ```
 
-Every arrow is a versioned API contract. No service reads another service's database. Provider-specific behavior remains behind adapters.
+Solid arrows are implemented. Dashed arrows are planned. No service reads another service's
+database. Provider-specific behavior remains behind adapters.
 
 The integration model has four modes: `bundled` for a portable ViewSense reference component,
 `adapter` for a ViewSense API boundary in front of a selected product, `managed-dependency` for a
@@ -89,6 +92,8 @@ Keycloak, SPIRE, n8n, or OpenTelemetry operators; it configures the ViewSense si
 boundaries. OPA is the exception and can be deployed as the governance pod's local sidecar.
 
 Start with [the architecture index](docs/design/high-level/design_01.md) and [the deployment design](docs/design/high-level/20-deployment/01-deployment-topology-sizing.md).
+Use the [implementation conformance map](docs/design/high-level/00-implementation-conformance.md)
+for the exact routes, runtime edges, state owners, and maturity of each integration.
 
 Copy-paste validation commands, including memory and governance APIs plus negative authorization checks, are in [tests/README.md](tests/README.md).
 That guide also contains the hidden-key OpenAI setup and a real curl prompt proving that retrieved

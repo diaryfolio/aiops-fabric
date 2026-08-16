@@ -4,6 +4,29 @@
 
 Kubernetes is the deployment contract. The portable base uses Deployments, StatefulSets, Services, Secrets, PVCs, probes, resource controls, service accounts, and NetworkPolicy. EKS, GKE, AKS, OpenShift, and bare-metal differences belong in overlays. Docker Compose mirrors process/network boundaries only and is not a production topology.
 
+```mermaid
+flowchart TB
+    subgraph Namespace["viewsense-dev reference namespace"]
+      subgraph Stateless["Deployments"]
+        Edge["gateway"]
+        Control["orchestrator + gateways"]
+        Providers["mock/provider adapters"]
+        Admin["governance + ingestion + agent runtime"]
+      end
+      subgraph Stateful["Single-replica development StatefulSets"]
+        MemoryDB[("memory-db")]
+        RegistryDB[("registry-db")]
+        GovernanceDB[("governance-db")]
+        AgentDB[("agent-db")]
+      end
+      Policy["default-deny + explicit NetworkPolicy"]
+      Secrets["generated development PKI/credentials"]
+    end
+    Secrets --> Stateless
+    Stateless --> Stateful
+    Policy -. "constrains declared paths when CNI enforces policy" .-> Stateless
+```
+
 ## Namespace and cluster patterns
 
 | Profile | Isolation | Suitable for |
@@ -63,6 +86,21 @@ ranges. Production must replace that broad rule with an egress proxy or CNI FQDN
 to `api.openai.com`, plus DNS/proxy failure tests. `make openai-disable` restores the mock route and
 deletes the development credential Secret and adapter resources.
 
+```mermaid
+flowchart LR
+    Values["Helm values/profile"] --> Render["ViewSense workloads"]
+    Render --> Bundled["bundled services and databases"]
+    Render --> Adapter["selected ViewSense adapter"]
+    Render -. "intent only" .-> Managed["Keycloak / SPIRE / Collector operator"]
+    Render -. "planned adapter" .-> Workflow["n8n / Temporal / Argo"]
+    Adapter --> External["enterprise-managed upstream product"]
+```
+
+The SPIRE socket/trust-domain and observability endpoint fields are reserved integration intent;
+the current chart does not mount an SVID/SDS workload API or configure native application OTLP
+export. External OpenAI and Mem0 adapters are the executable provider integrations. Generic
+vLLM/Ollama and workflow selections require adapters that have not shipped.
+
 ## Sizing method
 
 Control-plane sizing is driven by concurrent requests and provider wait time. Inference sizing is driven by tokens, context length, batching, quantization, and model/GPU class:
@@ -79,7 +117,7 @@ Provider descriptors include locality, residency, classification ceiling, capabi
 
 ## Development workflow in this repository
 
-`scripts/k8s-deploy-dev.sh` builds the image, imports it to the active k3d cluster, creates generated Secrets, applies `deploy/kubernetes/base`, and waits for rollout in `viewsense-dev`. It is an installation/update operation, not a routine cluster-start command. An existing stopped cluster resumes with `k3d cluster start cks`, after which Kubernetes restores its workloads and retained volumes. The base includes an independently addressed governance API and database with explicit NetworkPolicy. On an installed suite, `make openai-enable` prompts without echo, reads the non-secret model from `config/models.env`, creates the provider Secret, and applies `deploy/kubernetes/overlays/openai` without rebuilding images; `make openai-enable-fresh` performs the full deployment first. `make openai-model-update` patches only the validated model field and restarts the adapter without reading or replacing its API key. `scripts/k8s-test.sh` runs a namespaced smoke Job that validates provider admission and evidence alongside the core AI path. The scripts validate their fixed namespace before mutation. The operator-oriented lifecycle and recovery commands are maintained in the top-level `QUICKSTART.md`.
+`scripts/k8s-deploy-dev.sh` builds the image, imports it to the active k3d cluster, creates generated Secrets, applies `deploy/kubernetes/base`, and waits for rollout in `viewsense-dev`. It is an installation/update operation, not a routine cluster-start command. An existing stopped cluster resumes with `k3d cluster start cks`, after which Kubernetes restores its workloads and retained volumes. The base includes an independently addressed governance API and database with explicit NetworkPolicy. On an installed suite, `make openai-enable` prompts without echo, reads the non-secret model from `config/models.env`, creates the provider Secret, and applies `deploy/kubernetes/overlays/openai` without rebuilding images; `make openai-enable-fresh` performs the full deployment first. `make openai-model-update` patches only the validated model field and restarts the adapter without reading or replacing its API key. `scripts/k8s-test.sh` runs a namespaced smoke Job that validates provider admission and evidence alongside the core AI path, then pairs reachable and denied in-pod TCP probes to prove the local CNI enforces two representative NetworkPolicy boundaries. The scripts validate their fixed namespace before mutation. The operator-oriented lifecycle and recovery commands are maintained in the top-level `QUICKSTART.md`.
 
 ## Production gaps from the reference
 

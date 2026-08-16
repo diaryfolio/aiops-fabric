@@ -6,11 +6,11 @@ are installed and upgraded independently, then connected through these contracts
 | Product | ViewSense integration | Install ownership |
 |---|---|---|
 | Mem0 OSS/Platform | `memory-mem0` REST adapter and memory conformance suite | AI platform team |
-| SPIRE | SPIFFE Workload API/SDS profile and service-account registrations | cluster security team |
+| SPIRE | planned SPIFFE Workload API/SDS consumption; values are intent only | cluster security team |
 | OPA | bundled governance sidecar or external Data API | policy team |
 | Keycloak | edge OIDC/JWKS validation and claim mapping | identity team |
-| n8n/Temporal/Argo | workflow start/status/signal/cancel contract | automation team |
-| OpenTelemetry Collector | OTLP/JSON collection profile | observability team |
+| n8n/Temporal/Argo | planned workflow start/status/signal/cancel adapter | automation team |
+| OpenTelemetry Collector | JSON stdout collection now; native OTLP export planned | observability team |
 | Elastic/Splunk | collector export; never direct service SDK coupling | SIEM team |
 
 Use `fabric/product-catalog.json` to distinguish validated, configuration-ready, and planned paths.

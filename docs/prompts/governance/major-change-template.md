@@ -23,6 +23,7 @@ Use this template in PR descriptions for major changes.
 
 ## 4. Design Documents Updated
 
+- `docs/design/high-level/00-implementation-conformance.md`:
 - `docs/design/high-level/design_01.md`:
 - `docs/design/high-level/10-overall/`:
 - `docs/design/high-level/20-deployment/`:
@@ -40,6 +41,8 @@ Use this template in PR descriptions for major changes.
 ## 6. Validation
 
 - Tests performed:
+- Evidence links/artifacts:
+- Known production gaps:
 - Risks and mitigations:
 - Reviewer notes:
 
@@ -49,4 +52,6 @@ Use this template in PR descriptions for major changes.
 - Design Docs Updated:
 - Code Areas Updated:
 - Architecture Delta:
+- Tests/Evidence:
+- Known Production Gaps:
 - Sync Status: PASS

@@ -17,11 +17,12 @@ Before editing code, APIs, deployment assets, policy, dependencies, or runtime c
 In the same change set:
 
 1. Update affected design documents before declaring implementation complete.
-2. Update OpenAPI/event/provider contracts and compatibility notes when behavior changes.
-3. Update security controls, threat model, NetworkPolicy/RBAC/secret requirements, and audit events when data flow or access changes.
-4. Update deployment manifests, probes, resources, upgrade/rollback, backup/restore, and observability requirements when runtime behavior changes.
-5. Add or update unit, contract, integration, and negative security tests proportional to risk.
-6. Keep all service logs as structured JSON Lines and preserve request/trace correlation. Never log tokens, credentials, prompts, memory content, or tool payloads by default.
+2. Update `docs/design/high-level/00-implementation-conformance.md` whenever a service, route, runtime edge, state owner, provider maturity, trust boundary, or verification path changes.
+3. Update OpenAPI/event/provider contracts and compatibility notes when behavior changes.
+4. Update security controls, threat model, NetworkPolicy/RBAC/secret requirements, and audit events when data flow or access changes.
+5. Update deployment manifests, probes, resources, upgrade/rollback, backup/restore, and observability requirements when runtime behavior changes.
+6. Add or update unit, contract, integration, and negative security tests proportional to risk.
+7. Keep all service logs as structured JSON Lines and preserve request/trace correlation. Never log tokens, credentials, prompts, memory content, or tool payloads by default.
 
 ## Architecture rules
 
@@ -32,7 +33,7 @@ In the same change set:
 - Use deny-by-default network and authorization policy, least privilege, bounded deadlines/retries, and fail-closed security behavior.
 - Keep Kubernetes as the canonical packaging target and confine development resources to `viewsense-dev` unless an environment overlay explicitly defines another namespace.
 - Mark mocks, local issuers, static development PKI, and deterministic embeddings as non-production.
-- Avoid vendor lock-in in logging/metrics/traces: emit JSON stdout, W3C trace context, OpenMetrics, and OTLP-compatible telemetry; route to Elastic, Splunk, or other backends through collectors/exporters.
+- Avoid vendor lock-in in logging/metrics/traces. The production target is JSON stdout, propagated W3C trace context, OpenMetrics, and OTLP-compatible telemetry routed through collectors/exporters; record any implementation gap in the conformance map.
 
 ## Required validation
 
