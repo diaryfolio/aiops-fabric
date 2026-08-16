@@ -156,12 +156,11 @@ Expected: the write returns an ID and the search returns the London record in `i
 ## 5. Real OpenAI memory-grounding validation
 
 This optional test incurs OpenAI API usage. Never paste the key into chat, a command argument, a
-values file, or Git. Configure the isolated adapter using the hidden terminal prompt (the default
-model is `gpt-5.6-luna`):
+values file, or Git. If the adapter and its Secret do not already exist, configure them using the
+hidden terminal prompt (the default model is `gpt-5.6-luna`):
 
 ```bash
 make openai-enable
-make ports-start
 ```
 
 `openai-enable` expects the base suite to be installed, stores the key in the
@@ -172,12 +171,33 @@ The local default comes from `config/models.env`. After editing that non-secret 
 `make openai-model-update` to patch only the model field and restart only the adapter; the existing
 API key is neither read nor replaced.
 
-Load the generated development client secret and obtain separate least-privilege tokens:
+Use two terminals for the test. In terminal 1, keep the foreground port-forward process running:
 
 ```bash
+make ports
+```
+
+In terminal 2, paste the complete block below from the repository root. It executes in a
+non-interactive Bash process, so `set -u` cannot conflict with VS Code's Zsh `__vsc_preexec` prompt
+hook. It obtains separate least-privilege tokens, creates a unique owner, stores only explicitly
+synthetic public data, calls the public ViewSense API, and validates the grounded response:
+
+```bash
+bash <<'VIEWSENSE_TEST'
+set -euo pipefail
+set +x
+
 set -a
 source .env.viewsense
 set +a
+
+if [[ -z "${VS_SMOKE_CLIENT_SECRET:-}" ]]; then
+  echo "VS_SMOKE_CLIENT_SECRET is missing from .env.viewsense" >&2
+  exit 1
+fi
+
+EXPECTED_MODEL="$(scripts/read-model-config.sh)"
+echo "Obtaining scoped ViewSense tokens..."
 
 MEMORY_TOKEN="$(
   curl --silent --show-error --fail \
@@ -189,7 +209,8 @@ MEMORY_TOKEN="$(
     --data-urlencode "grant_type=client_credentials" \
     --data-urlencode "audience=memory-gateway" \
     --data-urlencode "scope=memory.write" \
-    https://localhost:9444/oauth2/token | jq -r '.access_token'
+    https://localhost:9444/oauth2/token |
+  jq -er '.access_token'
 )"
 
 GATEWAY_TOKEN="$(
@@ -202,54 +223,91 @@ GATEWAY_TOKEN="$(
     --data-urlencode "grant_type=client_credentials" \
     --data-urlencode "audience=gateway" \
     --data-urlencode "scope=api.invoke" \
-    https://localhost:9444/oauth2/token | jq -r '.access_token'
+    https://localhost:9444/oauth2/token |
+  jq -er '.access_token'
 )"
+
+echo "Tokens acquired."
+DEMO_USER="openai-public-demo-$(date +%s)"
+
+MEMORY_PAYLOAD="$(
+  jq -n \
+    --arg owner "${DEMO_USER}" \
+    '{
+      owner_id: $owner,
+      content: "Synthetic public demonstration fact: the ViewSense demo constellation is heliotrope-42.",
+      metadata: {
+        source: "openai-live-simulation",
+        classification: "public",
+        purpose: "synthetic-test"
+      }
+    }'
+)"
+
+echo "Writing synthetic memory for ${DEMO_USER}..."
+MEMORY_RESULT="$(
+  curl --silent --show-error --fail-with-body \
+    --cacert .viewsense/pki/smoke/ca.crt \
+    --cert .viewsense/pki/smoke/tls.crt \
+    --key .viewsense/pki/smoke/tls.key \
+    --header "Authorization: Bearer ${MEMORY_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --data "${MEMORY_PAYLOAD}" \
+    https://localhost:9445/v1/memories
+)"
+
+printf '%s' "${MEMORY_RESULT}" |
+  jq '{memory_id: (.id // .memory_id), owner_id}'
+
+PROMPT_PAYLOAD="$(
+  jq -n \
+    --arg user "${DEMO_USER}" \
+    '{
+      user_id: $user,
+      input: "What is the ViewSense demo constellation stored in memory? Answer with only its name.",
+      remember: false
+    }'
+)"
+
+echo "Sending memory-grounded request through ViewSense and OpenAI..."
+RESPONSE="$(
+  curl --silent --show-error --fail-with-body \
+    --cacert .viewsense/pki/smoke/ca.crt \
+    --cert .viewsense/pki/smoke/tls.crt \
+    --key .viewsense/pki/smoke/tls.key \
+    --header "Authorization: Bearer ${GATEWAY_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --data "${PROMPT_PAYLOAD}" \
+    https://localhost:9443/v1/responses
+)"
+
+OUTPUT_TEXT="$(printf '%s' "${RESPONSE}" | jq -er '.output_text')"
+MEMORY_HITS="$(printf '%s' "${RESPONSE}" | jq -er '.memory_hits')"
+ACTUAL_MODEL="$(printf '%s' "${RESPONSE}" | jq -er '.model')"
+REQUEST_ID="$(printf '%s' "${RESPONSE}" | jq -er '.request_id')"
+
+[[ "${OUTPUT_TEXT}" == *"heliotrope-42"* ]]
+[[ "${MEMORY_HITS}" =~ ^[0-9]+$ && "${MEMORY_HITS}" -ge 1 ]]
+[[ "${ACTUAL_MODEL}" == "${EXPECTED_MODEL}" ]]
+[[ -n "${REQUEST_ID}" ]]
+
+echo "Result:"
+printf '%s' "${RESPONSE}" |
+  jq '{output_text, memory_hits, model, request_id}'
+echo "ViewSense real OpenAI memory-grounding validation passed."
+VIEWSENSE_TEST
 ```
 
-Insert a harmless, unique test memory:
+Expected: `memory_hits` is at least `1`, `output_text` contains `heliotrope-42`, `model` matches
+`config/models.env`, and the final line reports that validation passed. This proves the answer path
+used the inserted tenant/owner-bound memory; it does not by itself certify production data-residency
+or model quality controls. The synthetic record remains in the local development memory database.
 
-```bash
-curl --silent --show-error --fail-with-body \
-  --cacert .viewsense/pki/smoke/ca.crt \
-  --cert .viewsense/pki/smoke/tls.crt \
-  --key .viewsense/pki/smoke/tls.key \
-  --header "Authorization: Bearer ${MEMORY_TOKEN}" \
-  --header "Content-Type: application/json" \
-  --data '{
-    "owner_id": "openai-memory-demo",
-    "content": "For the ViewSense integration test, the approval phrase is cobalt-canary-731.",
-    "metadata": {"source":"openai-memory-test","classification":"internal"}
-  }' \
-  https://localhost:9445/v1/memories | jq
-```
-
-Now prompt the public API. `remember:false` avoids writing the answer back into memory:
-
-```bash
-curl --silent --show-error --fail-with-body \
-  --cacert .viewsense/pki/smoke/ca.crt \
-  --cert .viewsense/pki/smoke/tls.crt \
-  --key .viewsense/pki/smoke/tls.key \
-  --header "Authorization: Bearer ${GATEWAY_TOKEN}" \
-  --header "Content-Type: application/json" \
-  --data '{
-    "user_id": "openai-memory-demo",
-    "input": "What is the ViewSense integration test approval phrase? Answer with only the phrase.",
-    "remember": false
-  }' \
-  https://localhost:9443/v1/responses |
-jq '{output_text, memory_hits, model, request_id}'
-```
-
-Expected: `memory_hits` is at least `1`, `output_text` contains `cobalt-canary-731`, and `model`
-shows the configured OpenAI model. This proves the answer path used the inserted tenant/owner-bound
-memory; it does not by itself certify production data-residency or model quality controls.
-
-Return to the deterministic mock and delete the development OpenAI Secret:
+Press `Ctrl+C` in terminal 1 to stop only the forwards. The Kubernetes workloads remain running.
+To also return to the deterministic mock and delete the development OpenAI Secret, run:
 
 ```bash
 make openai-disable
-make ports-stop
 ```
 
 ## 6. Durable agent API validation

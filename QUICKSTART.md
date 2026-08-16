@@ -158,8 +158,8 @@ ViewSense end-to-end smoke tests passed
 With the default route, the smoke test uses the deterministic mock LLM. With the OpenAI route
 enabled, inference steps use the configured OpenAI account and may incur API charges.
 
-For the copy-and-paste API test that writes a harmless memory and then asks OpenAI a curl prompt
-whose answer must use that memory, follow
+For the canonical two-terminal, VS Code-safe API test that writes uniquely owned synthetic public
+memory and then asks OpenAI a curl prompt whose answer must use that memory, follow
 [Real OpenAI memory-grounding validation](tests/README.md#5-real-openai-memory-grounding-validation).
 The same test guide contains direct memory, durable-agent, governance, negative-authorization, and
 observability checks.
