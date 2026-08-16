@@ -9,6 +9,7 @@ site_dir = "site"
 repo_url = "https://github.com/diaryfolio/aiops-fabric"
 repo_name = "diaryfolio/aiops-fabric"
 use_directory_urls = true
+extra_css = ["assets/stylesheets/viewsense.css"]
 
 nav = [
   { "Home" = "index.md" },
@@ -70,6 +71,8 @@ nav = [
 ]
 
 [project.theme]
+logo = "assets/images/viewsense-mark.svg"
+favicon = "assets/images/viewsense-mark.svg"
 features = [
   "navigation.instant",
   "navigation.instant.progress",

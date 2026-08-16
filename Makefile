@@ -1,4 +1,4 @@
-.PHONY: bootstrap lint unit catalog-check profile-check docs-build compose-up compose-test k8s-deploy k8s-test openai-enable openai-enable-fresh openai-model-update openai-disable ports ports-start ports-stop ports-status
+.PHONY: bootstrap lint unit catalog-check profile-check docs-build docs-preview compose-up compose-test k8s-deploy k8s-test openai-enable openai-enable-fresh openai-model-update openai-disable ports ports-start ports-stop ports-status
 
 bootstrap:
 	./scripts/bootstrap-dev-pki.sh
@@ -26,6 +26,9 @@ profile-check:
 
 docs-build:
 	bash scripts/build-docs.sh
+
+docs-preview: docs-build
+	python3 -m http.server 8765 --bind 127.0.0.1 --directory site
 
 compose-up: bootstrap
 	docker compose --env-file .env.viewsense up --build -d

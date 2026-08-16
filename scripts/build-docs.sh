@@ -64,6 +64,11 @@ documents=(
   "tests/README.md"
 )
 
+assets=(
+  "docs/assets/images/viewsense-mark.svg"
+  "docs/assets/stylesheets/viewsense.css"
+)
+
 cp "${repo_root}/README.md" "${staging}/index.md"
 for document in "${documents[@]}"; do
   if [[ ! -f "${repo_root}/${document}" ]]; then
@@ -72,6 +77,16 @@ for document in "${documents[@]}"; do
   fi
   mkdir -p "$(dirname "${staging}/${document}")"
   cp "${repo_root}/${document}" "${staging}/${document}"
+done
+
+for asset in "${assets[@]}"; do
+  if [[ ! -f "${repo_root}/${asset}" ]]; then
+    echo "missing published documentation asset: ${asset}" >&2
+    exit 1
+  fi
+  published_asset="${asset#docs/}"
+  mkdir -p "$(dirname "${staging}/${published_asset}")"
+  cp "${repo_root}/${asset}" "${staging}/${published_asset}"
 done
 
 cd "${repo_root}"

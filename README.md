@@ -4,6 +4,8 @@ ViewSense AI® is the control backbone for an organisation's AI. It lets teams u
 
 It can run in an enterprise data centre, a private cloud, a public cloud, or across several locations. The organisation decides where data may travel, which AI providers may be used, what an agent is allowed to do, and when a person must approve an action.
 
+> **Portable · Governed · Replaceable · Enterprise-controlled**
+
 ```mermaid
 flowchart LR
     Apps["Business applications"] --> VS["ViewSense AI® stable APIs"]
@@ -17,6 +19,38 @@ flowchart LR
 
 The repository's exact executable scope is maintained separately in the
 [implementation conformance map](docs/design/high-level/00-implementation-conformance.md).
+
+## Explore ViewSense AI®
+
+1. **Deploy the portable platform**
+
+    Install the Kubernetes development environment, start the services, and configure an optional
+    OpenAI provider. [Open the quick start →](QUICKSTART.md)
+
+2. **Validate real API flows**
+
+    Run copy-and-paste memory, identity, governance, agent, security, and grounded-LLM tests.
+    [Open the validation guide →](tests/README.md)
+
+3. **Understand the architecture**
+
+    See component boundaries, trust flows, APIs, state ownership, and replaceability rules.
+    [Explore the architecture →](docs/design/high-level/README.md)
+
+4. **Choose products and integrations**
+
+    Compare bundled, adapter, managed-dependency, and external product options.
+    [Review the product matrix →](fabric/PRODUCTS.md)
+
+5. **Build governed agentic workflows**
+
+    Design bounded agents, ingestion pipelines, approvals, tools, and workflow-engine integration.
+    [Explore the agentic design →](docs/design/high-level/70-agentic/01-agent-runtime-ingestion-workflows.md)
+
+6. **Operate with enterprise controls**
+
+    Apply zero trust, SSO, structured telemetry, evidence, day-two operations, and recovery controls.
+    [Review enterprise controls →](docs/design/high-level/60-enterprise/01-enterprise-integration-controls.md)
 
 ## The business problem
 

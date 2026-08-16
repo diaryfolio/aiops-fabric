@@ -4,6 +4,21 @@ The root `README.md` is both the GitHub repository introduction and the document
 page. Other published pages remain in their existing repository locations; the build copies only
 the curated files listed in `scripts/build-docs.sh` into an ignored staging directory.
 
+## Presentation layer
+
+The documentation remains ordinary GitHub-readable Markdown. Zensical progressively enhances that
+same content with the ViewSense AI® presentation layer:
+
+- `docs/assets/stylesheets/viewsense.css` owns colour, typography, cards, tables, navigation, and
+  light/dark styling;
+- `docs/assets/images/viewsense-mark.svg` is the documentation logo and favicon;
+- `zensical.toml` connects those assets to the generated site; and
+- `scripts/build-docs.sh` copies the approved assets and Markdown sources into `docs-site/`.
+
+Homepage cards intentionally originate as a normal ordered Markdown list. GitHub renders a readable
+list, while the documentation stylesheet turns the same list into a responsive card grid. Update the
+content only in `README.md`; never duplicate it in generated output.
+
 ```mermaid
 flowchart LR
     Sources["README and repository Markdown"] --> Stage["curated docs-site staging"]
@@ -23,6 +38,14 @@ PATH="$(pwd)/.venv-docs/bin:${PATH}" make docs-build
 
 Open `site/index.html` through a local static HTTP server to inspect the result. The generated
 `docs-site/` and `site/` directories are ignored by Git and must never be committed.
+
+For a local browser preview that behaves like GitHub Pages, run:
+
+```bash
+PATH="$(pwd)/.venv-docs/bin:${PATH}" make docs-preview
+```
+
+Open `http://127.0.0.1:8765/` and press `Ctrl-C` in the preview terminal to stop it.
 
 ## Navigation and source rules
 
