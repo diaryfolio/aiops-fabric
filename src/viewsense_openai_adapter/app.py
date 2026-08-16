@@ -36,7 +36,7 @@ def openai_base_url() -> str:
 
 
 def configured_model() -> str:
-    model = os.getenv("VS_OPENAI_MODEL", "gpt-4.1-mini").strip()
+    model = os.getenv("VS_OPENAI_MODEL", "").strip()
     if not MODEL_PATTERN.fullmatch(model):
         raise RuntimeError("VS_OPENAI_MODEL is invalid")
     return model

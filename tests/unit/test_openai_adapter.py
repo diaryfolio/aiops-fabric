@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import sys
+from pathlib import Path
 
 import pytest
 from fastapi import HTTPException
@@ -17,7 +18,7 @@ def adapter(monkeypatch, tmp_path):
 
 
 def test_request_is_minimized_and_model_is_server_controlled(adapter, monkeypatch):
-    monkeypatch.setenv("VS_OPENAI_MODEL", "gpt-4.1-mini")
+    monkeypatch.setenv("VS_OPENAI_MODEL", "gpt-5.6-sol")
     request = adapter.normalize_request(
         {
             "model": "caller-controlled-model",
@@ -28,10 +29,33 @@ def test_request_is_minimized_and_model_is_server_controlled(adapter, monkeypatc
         }
     )
     assert request == {
-        "model": "gpt-4.1-mini",
+        "model": "gpt-5.6-sol",
         "messages": [{"role": "user", "content": "Use retrieved memory"}],
         "stream": False,
     }
+
+
+def test_adapter_requires_deployment_control_of_model(adapter, monkeypatch):
+    monkeypatch.delenv("VS_OPENAI_MODEL", raising=False)
+    with pytest.raises(RuntimeError):
+        adapter.configured_model()
+
+
+def test_local_and_helm_openai_defaults_are_synchronized(adapter):
+    root = Path(__file__).resolve().parents[2]
+    defaults = {}
+    for line in (root / "config/models.env").read_text(encoding="utf-8").splitlines():
+        if line and not line.startswith("#"):
+            key, value = line.split("=", 1)
+            defaults[key] = value
+    model = defaults["VS_OPENAI_MODEL"]
+    assert adapter.MODEL_PATTERN.fullmatch(model)
+    assert f"model: {model}" in (
+        root / "fabric/charts/viewsense/values.yaml"
+    ).read_text(encoding="utf-8")
+    assert f"model: {model}" in (
+        root / "fabric/charts/viewsense/profiles/openai.yaml"
+    ).read_text(encoding="utf-8")
 
 
 def test_openai_endpoint_and_request_id_fail_closed(adapter, monkeypatch):

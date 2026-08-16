@@ -20,7 +20,10 @@ The bundled OpenAI adapter implements the internal non-streaming chat-completion
 the orchestrator. It accepts only text `system`, `user`, and `assistant` messages, discards
 unrecognized outbound fields, selects the configured model server-side, and pins the upstream base
 URL to `https://api.openai.com/v1`. This is an additive provider implementation; the public
-`/v1/responses` contract is unchanged.
+`/v1/responses` contract is unchanged. The OpenAI profile defaults to server-controlled
+`gpt-5.6-luna` from `config/models.env`; model changes are audited deployment configuration and
+require representative quality, latency, safety, and cost evaluation rather than a caller-selected
+field.
 
 ## Required request context
 

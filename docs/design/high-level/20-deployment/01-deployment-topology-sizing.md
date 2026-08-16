@@ -53,7 +53,11 @@ managed selection requires credentials, CA trust, explicit egress, conformance t
 pinning, upgrade/rollback ownership, and a provider passport before production routing.
 
 The `openai` Helm profile deploys only the ViewSense `openai-adapter`; it does not create or manage
-an OpenAI account. Its Secret must be supplied by the platform secret controller. The development
+an OpenAI account. Its local default model is read from `config/models.env` and currently resolves
+to `gpt-5.6-luna`. The model is non-secret, but the development overlay stores it beside the API key
+in the provider Secret so the adapter receives one provider configuration. The model remains
+server-controlled. In production the API-key Secret must be supplied by the platform secret
+controller, while the model is a Helm value. The development
 overlay permits public IPv4 HTTPS while excluding private, loopback, link-local, and reserved
 ranges. Production must replace that broad rule with an egress proxy or CNI FQDN policy restricted
 to `api.openai.com`, plus DNS/proxy failure tests. `make openai-disable` restores the mock route and
@@ -75,7 +79,7 @@ Provider descriptors include locality, residency, classification ceiling, capabi
 
 ## Development workflow in this repository
 
-`scripts/k8s-deploy-dev.sh` builds the image, imports it to the active k3d cluster, creates generated Secrets, applies `deploy/kubernetes/base`, and waits for rollout in `viewsense-dev`. It is an installation/update operation, not a routine cluster-start command. An existing stopped cluster resumes with `k3d cluster start cks`, after which Kubernetes restores its workloads and retained volumes. The base includes an independently addressed governance API and database with explicit NetworkPolicy. On an installed suite, `make openai-enable` prompts without echo, creates the provider Secret, and applies `deploy/kubernetes/overlays/openai` without rebuilding images; `make openai-enable-fresh` performs the full deployment first. `scripts/k8s-test.sh` runs a namespaced smoke Job that validates provider admission and evidence alongside the core AI path. The scripts validate their fixed namespace before mutation. The operator-oriented lifecycle and recovery commands are maintained in the top-level `QUICKSTART.md`.
+`scripts/k8s-deploy-dev.sh` builds the image, imports it to the active k3d cluster, creates generated Secrets, applies `deploy/kubernetes/base`, and waits for rollout in `viewsense-dev`. It is an installation/update operation, not a routine cluster-start command. An existing stopped cluster resumes with `k3d cluster start cks`, after which Kubernetes restores its workloads and retained volumes. The base includes an independently addressed governance API and database with explicit NetworkPolicy. On an installed suite, `make openai-enable` prompts without echo, reads the non-secret model from `config/models.env`, creates the provider Secret, and applies `deploy/kubernetes/overlays/openai` without rebuilding images; `make openai-enable-fresh` performs the full deployment first. `make openai-model-update` patches only the validated model field and restarts the adapter without reading or replacing its API key. `scripts/k8s-test.sh` runs a namespaced smoke Job that validates provider admission and evidence alongside the core AI path. The scripts validate their fixed namespace before mutation. The operator-oriented lifecycle and recovery commands are maintained in the top-level `QUICKSTART.md`.
 
 ## Production gaps from the reference
 

@@ -82,6 +82,9 @@ Envelope tenant delegation, external OIDC validation, built-in or OPA admission,
 evidence events, mTLS, scoped tokens, database ownership, provider host allow-listing, network
 segmentation, and Kubernetes deployment. The OpenAI adapter is configuration-ready and its live
 test requires a customer key; the deterministic mock remains the default regression provider.
+When the OpenAI adapter is selected, its local default model comes from the non-secret
+`config/models.env` and is currently `gpt-5.6-luna`; callers cannot override that server-controlled
+route through the public request model field.
 Keycloak and SPIRE are documented managed integrations;
 their operators are not bundled. Autonomous agent workers, workflow adapters, cryptographic
 third-party passport verification, immutable evidence export, full OpenTelemetry, HA, backups, and

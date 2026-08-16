@@ -157,7 +157,7 @@ Expected: the write returns an ID and the search returns the London record in `i
 
 This optional test incurs OpenAI API usage. Never paste the key into chat, a command argument, a
 values file, or Git. Configure the isolated adapter using the hidden terminal prompt (the default
-model is `gpt-4.1-mini`):
+model is `gpt-5.6-luna`):
 
 ```bash
 make openai-enable
@@ -168,6 +168,9 @@ make ports-start
 `openai-credentials` Kubernetes Secret, and switches only the LLM gateway route. The key is mounted
 only in `openai-adapter`; the gateway, orchestrator, memory services, and client never receive it.
 Use `make openai-enable-fresh` only when an image rebuild and base rollout are also required.
+The local default comes from `config/models.env`. After editing that non-secret file, run
+`make openai-model-update` to patch only the model field and restart only the adapter; the existing
+API key is neither read nor replaced.
 
 Load the generated development client secret and obtain separate least-privilege tokens:
 

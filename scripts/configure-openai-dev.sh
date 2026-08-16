@@ -3,7 +3,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 namespace="viewsense-dev"
-model="${VS_OPENAI_MODEL:-gpt-4.1-mini}"
+model="$("${repo_root}/scripts/read-model-config.sh")"
 openai_api_key="${OPENAI_API_KEY:-}"
 unset OPENAI_API_KEY
 
@@ -31,11 +31,6 @@ if [[ -z "${openai_api_key}" || "${openai_api_key}" == *$'\n'* ]]; then
   echo "OpenAI API key is empty or invalid" >&2
   exit 1
 fi
-if [[ ! "${model}" =~ ^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$ ]]; then
-  echo "VS_OPENAI_MODEL is invalid" >&2
-  exit 1
-fi
-
 kubectl -n "${namespace}" create secret generic tls-openai-adapter \
   --from-file=ca.crt="${repo_root}/.viewsense/pki/openai-adapter/ca.crt" \
   --from-file=tls.crt="${repo_root}/.viewsense/pki/openai-adapter/tls.crt" \

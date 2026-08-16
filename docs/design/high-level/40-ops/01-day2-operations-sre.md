@@ -40,6 +40,10 @@ For an OpenAI route, 401/403 indicates credential/configuration failure and page
 the provider dependency budget. Rollback runs `make openai-disable` in development or promotes the
 previous signed route configuration in production. Rotate/revoke the provider key at OpenAI first,
 then synchronize the secret and restart only the adapter; verify callers and logs never contain it.
+The local OpenAI model default is controlled by `config/models.env` and currently resolves to
+`gpt-5.6-luna`. Changing that default requires replaying representative
+memory-grounding, safety, latency, token-usage, and output-contract evaluations before promotion;
+rollback restores the last admitted model value without changing the stable ViewSense API.
 
 ## Capacity and cost
 

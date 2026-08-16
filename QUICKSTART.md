@@ -85,14 +85,25 @@ Enter the API key at the hidden prompt. Do not put it in the command, an environ
 values, documentation, chat, or Git. The setup script pipes it directly to the namespaced
 `openai-credentials` Secret. Only `openai-adapter` references that Secret.
 
-Set a non-secret model choice separately if required:
+The non-secret local default is maintained in `config/models.env`:
 
 ```bash
-VS_OPENAI_MODEL=gpt-4.1-mini make openai-enable
+VS_OPENAI_MODEL=gpt-5.6-luna
 ```
 
 Use `make openai-enable-fresh` only when the ViewSense image or Kubernetes resources also need to be
 rebuilt. Normal key or model configuration does not need an image import.
+
+To change the model later, edit that one value and update the running adapter without reading or
+replacing its API key:
+
+```bash
+make openai-model-update
+```
+
+An exported `VS_OPENAI_MODEL` overrides the file for a one-off `openai-enable` or
+`openai-model-update`. Helm installations use the equivalent
+`products.llm.openai.model` value so each environment can pin and promote its own model.
 
 Confirm configuration without displaying the Secret value:
 
