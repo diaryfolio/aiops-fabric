@@ -245,12 +245,12 @@ async def main() -> None:
         )
         agent_events.raise_for_status()
     assert len(agent_events.json()["items"]) == 6
-    print("ViewSense end-to-end smoke tests passed")
+    print("ViewSense AI® end-to-end smoke tests passed")
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except Exception as exc:
-        print(f"ViewSense smoke test failed: {exc}", file=sys.stderr)
+        print(f"ViewSense AI® smoke test failed: {exc}", file=sys.stderr)
         raise

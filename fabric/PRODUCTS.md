@@ -1,13 +1,13 @@
-# ViewSense Product and Integration Matrix
+# ViewSense AI® Product and Integration Matrix
 
-“Embedded” in ViewSense has four precise meanings:
+“Embedded” in ViewSense AI® has four precise meanings:
 
 | Mode | Meaning |
 |---|---|
-| bundled | installed, configured, upgraded, and tested by the ViewSense package |
-| adapter | ViewSense installs a zero-trust API adapter; the upstream product is selected separately |
+| bundled | installed, configured, upgraded, and tested by the ViewSense AI® package |
+| adapter | ViewSense AI® installs a zero-trust API adapter; the upstream product is selected separately |
 | managed dependency | an upstream operator/chart is installed by the platform team and consumed through a documented profile |
-| external | an existing enterprise or cloud service is connected through a stable ViewSense contract |
+| external | an existing enterprise or cloud service is connected through a stable ViewSense AI® contract |
 
 The machine-readable source is `product-catalog.json`. `readiness=validated` means the repository's
 automated suite executes that path. `configuration-ready` means Helm values, secrets, network and
@@ -28,7 +28,7 @@ flowchart LR
 
 ## Current product choices
 
-| Capability | Product | Mode | Readiness | What ViewSense provides |
+| Capability | Product | Mode | Readiness | What ViewSense AI® provides |
 |---|---|---|---|---|
 | human identity | development issuer | bundled | validated | local client credentials for tests only |
 | human identity | Keycloak or generic OIDC | external | configuration-ready | edge issuer/JWKS/audience/scope/tenant validation |
@@ -40,10 +40,10 @@ flowchart LR
 | memory | Mem0 OSS or Platform | adapter | configuration-ready | credential-isolated adapter, tenant/owner pseudonymization, normalization |
 | LLM | deterministic OpenAI-compatible mock | bundled | validated | contract and failure testing only |
 | LLM | OpenAI API | adapter | configuration-ready | credential-isolated adapter, fixed model/endpoint, Helm and development Kustomize profile, manual live memory-grounding test |
-| LLM | vLLM or external OpenAI-compatible endpoint | external | planned | requires a ViewSense mTLS/JWT adapter; endpoint values alone are insufficient |
+| LLM | vLLM or external OpenAI-compatible endpoint | external | planned | requires a ViewSense AI® mTLS/JWT adapter; endpoint values alone are insufficient |
 | ingestion | deterministic paragraph chunker | bundled | validated | synchronous chunking and memory writes |
 | ingestion | Unstructured-compatible provider | external | planned | adapter contract has not shipped |
-| tool/MCP | ViewSense mock tool provider | bundled | validated | registry plus `/v1/tools/call`; not native MCP transport |
+| tool/MCP | ViewSense AI® mock tool provider | bundled | validated | registry plus `/v1/tools/call`; not native MCP transport |
 | tool/MCP | MCP Streamable HTTP provider | adapter | planned | protocol adapter/certification runtime has not shipped |
 | policy | built-in admission checks | bundled | validated | capability, residency, classification, expiry, revocation, evaluation gates |
 | policy | OPA sidecar | bundled | configuration-ready | chart-rendered governance sidecar; production bundle operations are environment-owned |

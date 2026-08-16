@@ -1,8 +1,8 @@
-# ViewSense Sovereign Control and Evidence Fabric
+# ViewSense AI® Sovereign Control and Evidence Fabric
 
 ## Product position
 
-ViewSense is a sovereign AI control fabric. It does not compete with model, memory, workflow, or observability products; it owns the portable trust, policy, admission, routing, and evidence layer that keeps those products replaceable.
+ViewSense AI® is a sovereign AI control fabric. It does not compete with model, memory, workflow, or observability products; it owns the portable trust, policy, admission, routing, and evidence layer that keeps those products replaceable.
 
 ```mermaid
 flowchart TB
@@ -49,7 +49,7 @@ The initial governance database is an executable reference, not the final immuta
 
 ## Future interoperability
 
-- OpenAPI/AsyncAPI for ViewSense contracts and events;
+- OpenAPI/AsyncAPI for ViewSense AI® contracts and events;
 - OpenAI-compatible model calls with explicit capability negotiation;
 - MCP behind the governed tool gateway;
 - A2A adapter for remote agent discovery and collaboration;

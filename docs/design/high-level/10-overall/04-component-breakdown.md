@@ -1,4 +1,4 @@
-# ViewSense Component and Ownership Model
+# ViewSense AI® Component and Ownership Model
 
 ```mermaid
 flowchart TB
@@ -61,7 +61,7 @@ These have different retention and authorization and must not be merged into one
 ## MCP gateway and runtime
 
 The implemented gateway owns a PostgreSQL server registry, exact HTTPS host allow-list, scoped
-registration/invocation APIs, and a ViewSense-owned `/v1/tools/call` provider contract. The mock
+registration/invocation APIs, and a ViewSense AI®-owned `/v1/tools/call` provider contract. The mock
 provider proves isolation and invocation. Native MCP Streamable HTTP translation, certification,
 per-tool policy, approval state, and immutable invocation audit are planned; the current registry
 entry plus `enabled` flag is not production certification.
@@ -113,7 +113,7 @@ immutable audit sink.
 | LLM provider | deterministic mock; OpenAI credential adapter | planned vLLM, Ollama, Azure OpenAI adapters |
 | memory provider | PostgreSQL + pgvector; Mem0 adapter | Qdrant adapter, managed vector service |
 | agent runtime | persistent bounded state machine | LangGraph-compatible adapter |
-| MCP provider | ViewSense echo tool provider | planned native/certified enterprise MCP adapter |
+| MCP provider | ViewSense AI® echo tool provider | planned native/certified enterprise MCP adapter |
 | identity | local RSA token issuer | enterprise IdP + workload identity |
 | governance/evidence | owned PostgreSQL reference | external policy and immutable evidence sinks |
 | deployment | Kustomize development base | Helm/GitOps environment overlays |

@@ -81,7 +81,7 @@ async def lifespan(_: FastAPI):
     pool = None
 
 
-app = FastAPI(title="ViewSense Durable Agent Runtime", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="ViewSense AI® Durable Agent Runtime", version="1.0.0", lifespan=lifespan)
 auth = TokenVerifier("agent-runtime")
 
 

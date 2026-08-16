@@ -32,4 +32,4 @@ kubectl -n "${namespace}" delete \
   secret/openai-credentials \
   secret/tls-openai-adapter \
   --ignore-not-found
-echo "ViewSense now routes to the deterministic mock LLM; the development OpenAI Secret was deleted."
+echo "ViewSense AI® now routes to the deterministic mock LLM; the development OpenAI Secret was deleted."

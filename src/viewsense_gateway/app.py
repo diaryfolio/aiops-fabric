@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from viewsense_common.auth import OIDCTokenVerifier, TokenVerifier
 from viewsense_common.client import ServiceClient
 
-app = FastAPI(title="ViewSense Edge API", version="1.0.0")
+app = FastAPI(title="ViewSense AI® Edge API", version="1.0.0")
 auth = (
     OIDCTokenVerifier()
     if os.getenv("VS_EXTERNAL_OIDC_JWKS_URL")

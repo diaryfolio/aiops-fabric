@@ -1,17 +1,17 @@
-# ViewSense: Enterprise AI Without Losing Control
+# ViewSense AI®: Enterprise AI Without Losing Control
 
-ViewSense is the control backbone for an organisation's AI. It lets teams use private models, cloud AI, company knowledge, automated agents, and business tools through one governed platform without making the organisation permanently dependent on one vendor.
+ViewSense AI® is the control backbone for an organisation's AI. It lets teams use private models, cloud AI, company knowledge, automated agents, and business tools through one governed platform without making the organisation permanently dependent on one vendor.
 
 It can run in an enterprise data centre, a private cloud, a public cloud, or across several locations. The organisation decides where data may travel, which AI providers may be used, what an agent is allowed to do, and when a person must approve an action.
 
 ```mermaid
 flowchart LR
-    Apps["Business applications"] --> ViewSense["ViewSense stable APIs"]
-    ViewSense --> Models["Local or cloud AI models"]
-    ViewSense --> Memory["Enterprise memory and knowledge"]
-    ViewSense --> Tools["Tools, MCP and workflows"]
-    Identity["Enterprise identity and policy"] --> ViewSense
-    ViewSense --> Evidence["Governance and safe evidence"]
+    Apps["Business applications"] --> VS["ViewSense AI® stable APIs"]
+    VS --> Models["Local or cloud AI models"]
+    VS --> Memory["Enterprise memory and knowledge"]
+    VS --> Tools["Tools, MCP and workflows"]
+    Identity["Enterprise identity and policy"] --> VS
+    VS --> Evidence["Governance and safe evidence"]
     Models & Memory & Tools --> Control["Enterprise-owned data, credentials and operations"]
 ```
 
@@ -22,7 +22,7 @@ The repository's exact executable scope is maintained separately in the
 
 Enterprises increasingly have separate AI assistants, model providers, vector databases, automation products, and tool integrations. Each product brings its own identity, security, audit, data-retention, and operational model. This creates duplicated cost, inconsistent controls, vendor lock-in, and uncertainty about what happened when AI makes a decision or takes an action.
 
-ViewSense provides a stable layer above those products. Applications connect to ViewSense rather than directly to a model, memory database, or automation engine. Products can then be replaced through policy and configuration instead of rewriting every application.
+ViewSense AI® provides a stable layer above those products. Applications connect to ViewSense AI® rather than directly to a model, memory database, or automation engine. Products can then be replaced through policy and configuration instead of rewriting every application.
 
 ## Business benefits
 
@@ -36,12 +36,12 @@ ViewSense provides a stable layer above those products. Applications connect to 
 | Support private and regulated environments | Package the backbone for Kubernetes deployment in enterprise-controlled data centres, clouds, or isolated environments. |
 | Improve visibility and cost control | Attribute usage to the relevant tenant and provider so enterprises can build service levels, budgets, alerts, showback, and stop-loss controls. |
 
-## Native ViewSense foundation
+## Native ViewSense AI® foundation
 
-The green tick identifies capabilities owned by the ViewSense backbone rather than delegated to a
+The green tick identifies capabilities owned by the ViewSense AI® backbone rather than delegated to a
 specific model, database, identity, workflow, or observability vendor.
 
-| Native capability | Included ViewSense responsibility |
+| Native capability | Included ViewSense AI® responsibility |
 |---|---|
 | ✅ Stable API layer | Keeps business applications independent from provider-specific SDKs and interfaces. |
 | ✅ Zero-trust service boundaries | Requires encrypted internal communication, explicit audiences, scoped authorization, and tenant-bound context. |
@@ -55,17 +55,17 @@ specific model, database, identity, workflow, or observability vendor.
 
 ## Target operating model in plain language
 
-1. A person or application sends an AI request to ViewSense.
-2. ViewSense verifies who is asking, for which organisation, and for what purpose.
+1. A person or application sends an AI request to ViewSense AI®.
+2. ViewSense AI® verifies who is asking, for which organisation, and for what purpose.
 3. Policy identifies providers allowed for that data, location, risk, and capability.
 4. Approved company memory is retrieved without giving the model direct database access.
 5. The selected AI model produces a response or proposes an action.
 6. Tool actions pass through a governed gateway and may require human approval.
-7. ViewSense records safe evidence explaining the execution, without recording confidential payloads by default.
+7. ViewSense AI® records safe evidence explaining the execution, without recording confidential payloads by default.
 
-## What ViewSense does not try to be
+## What ViewSense AI® does not try to be
 
-ViewSense is not another foundation model, vector database, low-code workflow editor, or SIEM. It integrates and governs those products. This focus is what lets an enterprise keep control while technology and suppliers change.
+ViewSense AI® is not another foundation model, vector database, low-code workflow editor, or SIEM. It integrates and governs those products. This focus is what lets an enterprise keep control while technology and suppliers change.
 
 ## Intended users
 
@@ -76,6 +76,8 @@ ViewSense is not another foundation model, vector database, low-code workflow ed
 - Data owners requiring lineage, retention, residency, and deletion controls.
 
 For the current embedded/integratable product list, see the [product catalog](fabric/PRODUCTS.md).
+For the navigable web documentation, see the
+[ViewSense AI® documentation portal](https://diaryfolio.github.io/aiops-fabric/).
 For installation, daily startup, OpenAI configuration, testing, and shutdown, see the
 [quick start](QUICKSTART.md).
 For architecture, installation, and engineering details, see the [technical guide](TECHNICAL_README.md).

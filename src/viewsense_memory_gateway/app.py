@@ -9,7 +9,7 @@ from viewsense_common.auth import TokenVerifier
 from viewsense_common.client import ServiceClient
 from viewsense_common.tenant import delegated_tenant
 
-app = FastAPI(title="ViewSense Memory Gateway API", version="1.0.0")
+app = FastAPI(title="ViewSense AI® Memory Gateway API", version="1.0.0")
 auth = TokenVerifier("memory-gateway")
 client = ServiceClient()
 PROVIDER_URL = os.getenv("VS_MEMORY_PROVIDER_URL", "https://memory-postgres:8443")

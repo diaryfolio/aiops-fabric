@@ -1,10 +1,10 @@
-# ViewSense Repository Instructions
+# ViewSense AI® Repository Instructions
 
 These instructions apply to every human or AI-assisted change in this repository.
 
 ## Mission
 
-ViewSense is a Kubernetes-native, API-first, zero-trust enterprise AI backbone. Preserve component replaceability, provider neutrality, tenant isolation, workload identity, and data ownership boundaries in every change.
+ViewSense AI® is a Kubernetes-native, API-first, zero-trust enterprise AI backbone. Preserve component replaceability, provider neutrality, tenant isolation, workload identity, and data ownership boundaries in every change.
 
 ## Mandatory design-sync workflow
 
@@ -23,9 +23,14 @@ In the same change set:
 5. Update deployment manifests, probes, resources, upgrade/rollback, backup/restore, and observability requirements when runtime behavior changes.
 6. Add or update unit, contract, integration, and negative security tests proportional to risk.
 7. Keep all service logs as structured JSON Lines and preserve request/trace correlation. Never log tokens, credentials, prompts, memory content, or tool payloads by default.
+8. When a published Markdown page is added, moved, or renamed, update both `scripts/build-docs.sh`
+   and `zensical.toml`; never edit generated `docs-site/` or `site/` content.
 
 ## Architecture rules
 
+- Use `ViewSense AI®` for the human-facing product name in prose, generated documentation,
+  API titles, and operator messages. Preserve established ASCII protocol and deployment identifiers
+  such as `X-ViewSense-Tenant`, `viewsense-dev`, `VS_*`, package names, image names, and URLs.
 - Communicate across components only through versioned APIs/events; never read another service's database.
 - Keep provider SDKs and credentials inside provider adapters.
 - Require encrypted transport plus explicit audience/scoped authorization at every internal hop.
@@ -43,6 +48,12 @@ At minimum run:
 make unit
 make lint
 kubectl kustomize deploy/kubernetes/base >/dev/null
+```
+
+For any change to published documentation or its navigation, also run:
+
+```bash
+make docs-build
 ```
 
 For runtime, security, contract, or Kubernetes changes, also run:

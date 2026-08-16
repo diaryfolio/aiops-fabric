@@ -1,1 +1,1 @@
-"""ViewSense governed document ingestion capability."""
+"""ViewSense AI® governed document ingestion capability."""

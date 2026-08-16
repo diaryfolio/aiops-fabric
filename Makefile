@@ -1,4 +1,4 @@
-.PHONY: bootstrap lint unit catalog-check profile-check compose-up compose-test k8s-deploy k8s-test openai-enable openai-enable-fresh openai-model-update openai-disable ports ports-start ports-stop ports-status
+.PHONY: bootstrap lint unit catalog-check profile-check docs-build compose-up compose-test k8s-deploy k8s-test openai-enable openai-enable-fresh openai-model-update openai-disable ports ports-start ports-stop ports-status
 
 bootstrap:
 	./scripts/bootstrap-dev-pki.sh
@@ -23,6 +23,9 @@ profile-check:
 		helm lint fabric/charts/viewsense -f "$$profile"; \
 		helm template viewsense fabric/charts/viewsense -f "$$profile" >/dev/null; \
 	done
+
+docs-build:
+	bash scripts/build-docs.sh
 
 compose-up: bootstrap
 	docker compose --env-file .env.viewsense up --build -d

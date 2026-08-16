@@ -1,9 +1,9 @@
-# ViewSense Implementation Conformance
+# ViewSense AI® Implementation Conformance
 
 This is the truth map between architecture intent and the repository as shipped. The labels are:
 
 - **implemented:** code, packaging, and an automated repository test exist;
-- **configuration-ready:** the ViewSense boundary exists, but an enterprise product or credential is required;
+- **configuration-ready:** the ViewSense AI® boundary exists, but an enterprise product or credential is required;
 - **planned:** design or selection intent exists, but no executable adapter is shipped.
 
 ## Executable reference topology
@@ -29,7 +29,7 @@ flowchart LR
     Ingestion -->|"memory.write"| MemoryGateway
     TestClient --> MCPGateway["mcp-gateway"]
     MCPGateway --> RegistryDB[("registry-db")]
-    MCPGateway -->|"ViewSense tool-provider API"| MockMCP["mock-mcp"]
+    MCPGateway -->|"ViewSense AI® tool-provider API"| MockMCP["mock-mcp"]
     TestClient --> Governance["governance"]
     Governance --> GovernanceDB[("governance-db")]
     TestClient --> Agent["agent-runtime"]
@@ -39,7 +39,7 @@ flowchart LR
     Gateway & Orchestrator & MemoryGateway & LLMGateway & Ingestion & MCPGateway --> Identity
 ```
 
-All solid internal ViewSense service-to-service calls above use TLS with a client certificate plus
+All solid internal ViewSense AI® service-to-service calls above use TLS with a client certificate plus
 a short-lived audience/scoped token. Calls from provider adapters to external vendor APIs instead
 use the vendor's HTTPS authentication contract. The development CA proves encrypted, authenticated
 transport; it does not provide SPIFFE identity binding. Tenant context is carried in the signed
@@ -54,7 +54,7 @@ flowchart TB
       I2["Response orchestration"]
       I3["Mock LLM"]
       I4["PostgreSQL/pgvector memory"]
-      I5["MCP registry + ViewSense tool-provider call"]
+      I5["MCP registry + ViewSense AI® tool-provider call"]
       I6["Provider admission + safe evidence"]
       I7["Bounded agent lifecycle"]
       I8["Synchronous paragraph ingestion"]

@@ -106,7 +106,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="ViewSense Governance and Evidence API",
+    title="ViewSense AI® Governance and Evidence API",
     version="1.0.0",
     lifespan=lifespan,
 )

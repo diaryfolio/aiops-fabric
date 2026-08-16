@@ -1,1 +1,1 @@
-"""PostgreSQL/pgvector implementation of the ViewSense memory provider contract."""
+"""PostgreSQL/pgvector implementation of the ViewSense AI® memory provider contract."""

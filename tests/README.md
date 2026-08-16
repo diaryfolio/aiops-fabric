@@ -1,4 +1,4 @@
-# ViewSense Test and Validation Guide
+# ViewSense AI® Test and Validation Guide
 
 Run commands from the repository root. Development PKI and credentials are generated under `.viewsense/` and `.env.viewsense`; both are ignored by Git. Never reuse them outside the isolated development environment.
 
@@ -44,7 +44,7 @@ make compose-test
 Expected final line:
 
 ```text
-ViewSense end-to-end smoke tests passed
+ViewSense AI® end-to-end smoke tests passed
 ```
 
 Stop application containers while retaining development database volumes:
@@ -124,7 +124,7 @@ curl --silent --show-error --fail-with-body \
   --header "Content-Type: application/json" \
   --data '{
     "owner_id": "api-demo-user",
-    "content": "The ViewSense production region is London.",
+    "content": "The ViewSense AI® production region is London.",
     "metadata": {
       "source": "manual-api-test",
       "classification": "internal"
@@ -181,7 +181,7 @@ make ports
 In terminal 2, paste the complete block below from the repository root. It executes in a
 non-interactive Bash process, so `set -u` cannot conflict with VS Code's Zsh `__vsc_preexec` prompt
 hook. It obtains separate least-privilege tokens, creates a unique owner, stores only explicitly
-synthetic public data, calls the public ViewSense API, and validates the grounded response:
+synthetic public data, calls the public ViewSense AI® API, and validates the grounded response:
 
 ```bash
 bash <<'VIEWSENSE_TEST'
@@ -198,7 +198,7 @@ if [[ -z "${VS_SMOKE_CLIENT_SECRET:-}" ]]; then
 fi
 
 EXPECTED_MODEL="$(scripts/read-model-config.sh)"
-echo "Obtaining scoped ViewSense tokens..."
+echo "Obtaining scoped ViewSense AI® tokens..."
 
 MEMORY_TOKEN="$(
   curl --silent --show-error --fail \
@@ -236,7 +236,7 @@ MEMORY_PAYLOAD="$(
     --arg owner "${DEMO_USER}" \
     '{
       owner_id: $owner,
-      content: "Synthetic public demonstration fact: the ViewSense demo constellation is heliotrope-42.",
+      content: "Synthetic public demonstration fact: the ViewSense AI® demo constellation is heliotrope-42.",
       metadata: {
         source: "openai-live-simulation",
         classification: "public",
@@ -265,12 +265,12 @@ PROMPT_PAYLOAD="$(
     --arg user "${DEMO_USER}" \
     '{
       user_id: $user,
-      input: "What is the ViewSense demo constellation stored in memory? Answer with only its name.",
+      input: "What is the ViewSense AI® demo constellation stored in memory? Answer with only its name.",
       remember: false
     }'
 )"
 
-echo "Sending memory-grounded request through ViewSense and OpenAI..."
+echo "Sending memory-grounded request through ViewSense AI® and OpenAI..."
 RESPONSE="$(
   curl --silent --show-error --fail-with-body \
     --cacert .viewsense/pki/smoke/ca.crt \
@@ -295,7 +295,7 @@ REQUEST_ID="$(printf '%s' "${RESPONSE}" | jq -er '.request_id')"
 echo "Result:"
 printf '%s' "${RESPONSE}" |
   jq '{output_text, memory_hits, model, request_id}'
-echo "ViewSense real OpenAI memory-grounding validation passed."
+echo "ViewSense AI® real OpenAI memory-grounding validation passed."
 VIEWSENSE_TEST
 ```
 
@@ -581,11 +581,11 @@ kubectl -n viewsense-dev create secret generic mem0-credentials \
 
 Before installation, deploy an authenticated Mem0 OSS REST server over HTTPS in the configured
 `memory-platform` namespace and make its pod labels/port match `mem0.inCluster`. For a remote Mem0
-endpoint disable `inCluster` and set explicit egress CIDRs. Run create/search through the ViewSense memory gateway, not
+endpoint disable `inCluster` and set explicit egress CIDRs. Run create/search through the ViewSense AI® memory gateway, not
 directly from applications. The conformance pass must cover missing/wrong API key, upstream timeout,
 malformed response, tenant/owner isolation, limits, metadata, export/restore, and failure without
 fallback. For Mem0 Platform use `mem0-platform-adapter`; the adapter translates `/v1` paths while the
-ViewSense API remains unchanged.
+ViewSense AI® API remains unchanged.
 
 ### OPA
 

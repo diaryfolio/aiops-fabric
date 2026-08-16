@@ -1,1 +1,1 @@
-"""Shared protocol and security utilities for independently deployed ViewSense services."""
+"""Shared protocol and security utilities for independently deployed ViewSense AI® services."""

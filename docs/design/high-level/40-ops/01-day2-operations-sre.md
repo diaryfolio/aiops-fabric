@@ -1,4 +1,4 @@
-# ViewSense Day-2 Operations and SRE
+# ViewSense AI® Day-2 Operations and SRE
 
 ## Observability: current and target
 
@@ -40,7 +40,7 @@ The agent database is a separate state owner. Restore it before resuming workers
 runs paused until version/idempotency reconciliation completes, and never infer that a side effect
 must be repeated merely because an event is absent. Mem0 backup/export, Keycloak realm recovery,
 SPIRE trust-bundle recovery, OPA bundle rollback, and workflow recovery remain owned by their
-selected product operators and must be tested with the ViewSense conformance suite.
+selected product operators and must be tested with the ViewSense AI® conformance suite.
 
 ## Incident playbooks
 
@@ -58,7 +58,7 @@ then synchronize the secret and restart only the adapter; verify callers and log
 The local OpenAI model default is controlled by `config/models.env` and currently resolves to
 `gpt-5.6-luna`. Changing that default requires replaying representative
 memory-grounding, safety, latency, token-usage, and output-contract evaluations before promotion;
-rollback restores the last admitted model value without changing the stable ViewSense API.
+rollback restores the last admitted model value without changing the stable ViewSense AI® API.
 
 ## Capacity and cost
 
@@ -83,7 +83,7 @@ capacity budget, disruption budget, and tested rollback.
 Trust Envelope failures are separated into missing context, unsupported version, tenant inconsistency, delegation denial, expired token, wrong audience, and insufficient scope. They are security signals and must not trigger fallback to an unsigned header or a less-restricted provider.
 
 Product readiness is read from `fabric/product-catalog.json`: `validated` has repository evidence,
-`configuration-ready` has an executable ViewSense integration boundary but needs the selected
+`configuration-ready` has an executable ViewSense AI® integration boundary but needs the selected
 environment, and `planned` is declaration-only. Render every profile with `make profile-check`.
 Never report a profile as installed merely because Helm accepts its values.
 

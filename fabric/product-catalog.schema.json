@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://viewsense.local/schemas/product-catalog.schema.json",
-  "title": "ViewSense Integration Product Catalog",
+  "title": "ViewSense AI® Integration Product Catalog",
   "type": "object",
   "required": ["apiVersion", "kind", "products"],
   "properties": {

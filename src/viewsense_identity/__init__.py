@@ -1,1 +1,1 @@
-"""ViewSense development identity issuer."""
+"""ViewSense AI® development identity issuer."""

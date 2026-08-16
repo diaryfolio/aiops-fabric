@@ -1,0 +1,107 @@
+[project]
+site_name = "ViewSense AI® Documentation"
+site_url = "https://diaryfolio.github.io/aiops-fabric/"
+site_description = "Business, architecture, security, operations, and integration documentation for the ViewSense AI® enterprise AI backbone."
+site_author = "ViewSense AI® contributors"
+copyright = "ViewSense AI® documentation"
+docs_dir = "docs-site"
+site_dir = "site"
+repo_url = "https://github.com/diaryfolio/aiops-fabric"
+repo_name = "diaryfolio/aiops-fabric"
+use_directory_urls = true
+
+nav = [
+  { "Home" = "index.md" },
+  { "Get started" = [
+    { "Quick start" = "QUICKSTART.md" },
+    { "Test and validation" = "tests/README.md" },
+    { "Technical guide" = "TECHNICAL_README.md" },
+  ] },
+  { "Architecture" = [
+    { "Design library" = "docs/design/high-level/README.md" },
+    { "Architecture index" = "docs/design/high-level/design_01.md" },
+    { "Implementation conformance" = "docs/design/high-level/00-implementation-conformance.md" },
+    { "Objectives and principles" = "docs/design/high-level/10-overall/01-objective-principles.md" },
+    { "Runtime topology" = "docs/design/high-level/10-overall/02-runtime-topology-flow.md" },
+    { "API standards" = "docs/design/high-level/10-overall/03-api-integration-standards.md" },
+    { "Components and ownership" = "docs/design/high-level/10-overall/04-component-breakdown.md" },
+    { "Agent runtime and ingestion" = "docs/design/high-level/70-agentic/01-agent-runtime-ingestion-workflows.md" },
+    { "Enterprise controls" = "docs/design/high-level/60-enterprise/01-enterprise-integration-controls.md" },
+    { "Sovereign fabric" = "docs/design/high-level/80-future/01-sovereign-control-evidence-fabric.md" },
+  ] },
+  { "Security and operations" = [
+    { "Zero-trust security" = "docs/design/high-level/30-security/01-zero-trust.md" },
+    { "Kubernetes deployment" = "docs/design/high-level/20-deployment/01-deployment-topology-sizing.md" },
+    { "Operations baseline" = "docs/design/high-level/10-overall/05-operations-and-roadmap.md" },
+    { "Day-2 operations" = "docs/design/high-level/40-ops/01-day2-operations-sre.md" },
+    { "Roadmap" = "docs/design/high-level/50-roadmap/01-roadmap-maturity.md" },
+  ] },
+  { "Products and integrations" = [
+    { "Product matrix" = "fabric/PRODUCTS.md" },
+    { "Fabric module model" = "fabric/README.md" },
+    { "Core" = "fabric/core/README.md" },
+    { "Identity" = "fabric/identity/README.md" },
+    { "LLM" = "fabric/llm/README.md" },
+    { "Memory" = "fabric/memory/README.md" },
+    { "Ingestion" = "fabric/ingestion/README.md" },
+    { "Agents" = "fabric/agents/README.md" },
+    { "Tools and MCP" = "fabric/mcp-registry/README.md" },
+    { "Workflows" = "fabric/workflows/README.md" },
+    { "Governance" = "fabric/governance/README.md" },
+    { "Observability" = "fabric/observability/README.md" },
+    { "Helm chart" = "fabric/charts/viewsense/README.md" },
+    { "Enterprise integrations" = [
+      { "Overview" = "deploy/integrations/README.md" },
+      { "Keycloak" = "deploy/integrations/keycloak.md" },
+      { "SPIRE" = "deploy/integrations/spire.md" },
+      { "Observability and workflows" = "deploy/integrations/observability-workflows.md" },
+    ] },
+  ] },
+  { "Contracts and governance" = [
+    { "Contracts" = "contracts/README.md" },
+    { "Repository instructions" = "CLAUDE.md" },
+    { "Governance prompt pack" = "docs/prompts/governance/README.md" },
+    { "Design-sync policy" = "docs/prompts/governance/major-change-policy.md" },
+    { "Design-sync checklist" = "docs/prompts/governance/design-sync-checklist.md" },
+    { "Design-sync guardrail" = "docs/prompts/governance/design-sync-guardrail.prompt.md" },
+    { "Major-change template" = "docs/prompts/governance/major-change-template.md" },
+  ] },
+  { "Publishing" = "docs/publishing.md" },
+]
+
+[project.theme]
+features = [
+  "navigation.instant",
+  "navigation.instant.progress",
+  "navigation.tracking",
+  "navigation.tabs",
+  "navigation.tabs.sticky",
+  "navigation.sections",
+  "navigation.path",
+  "navigation.top",
+  "navigation.footer",
+  "toc.follow",
+  "content.code.copy",
+]
+icon.repo = "fontawesome/brands/github"
+
+[project.markdown_extensions]
+pymdownx.superfences.custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "teal"
+accent = "green"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "teal"
+accent = "green"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"

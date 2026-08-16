@@ -1,14 +1,14 @@
-# ViewSense Architecture Index
+# ViewSense AI® Architecture Index
 
 ## Decision
 
-ViewSense is an API-first, Kubernetes-native sovereign AI control and evidence fabric with a small
+ViewSense AI® is an API-first, Kubernetes-native sovereign AI control and evidence fabric with a small
 portable reference suite. It owns portable trust envelopes, provider admission, policy, routing,
 bounded agent state, safe evidence context, and stable contracts. Model, memory, workflow, identity,
 policy, and MCP products remain replaceable behind those contracts.
 
 Product packaging uses four explicit modes: `bundled`, `adapter`, `managed-dependency`, and
-`external`. A bundled component is installed and tested with ViewSense; an adapter is installed but
+`external`. A bundled component is installed and tested with ViewSense AI®; an adapter is installed but
 its upstream product is separate; a managed dependency is installed/operated at platform scope; an
 external product is reached through an API. Product selection never implies product installation.
 
@@ -87,7 +87,7 @@ sequenceDiagram
 
 The current code proves edge-to-orchestrator-to-memory/LLM flow, a credential-isolated OpenAI
 adapter, PostgreSQL/pgvector and Mem0
-memory boundaries, MCP registration and ViewSense tool-provider invocation, persistent bounded
+memory boundaries, MCP registration and ViewSense AI® tool-provider invocation, persistent bounded
 agent lifecycle, signed Trust
 Envelope tenant delegation, external OIDC validation, built-in admission plus an OPA decision
 boundary, append-only safe

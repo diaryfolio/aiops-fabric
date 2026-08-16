@@ -1,4 +1,4 @@
-# ViewSense Zero-Trust Security Model
+# ViewSense AI® Zero-Trust Security Model
 
 ## Security objective
 
@@ -39,7 +39,7 @@ The development issuer uses client credentials and RS256 plus a generated CA to 
 
 SPIRE is a cluster workload-identity authority, not an application library or proof of authorization.
 Production installs its server/agent lifecycle separately, maps each service account to a unique
-SPIFFE ID, rotates SVIDs, and presents them through an SDS-capable proxy or service mesh. ViewSense
+SPIFFE ID, rotates SVIDs, and presents them through an SDS-capable proxy or service mesh. ViewSense AI®
 still requires exact token audience/scopes and tenant policy after mTLS succeeds.
 
 The shipped development manifests use separate service certificates and credentials, disable
@@ -51,7 +51,7 @@ must supply database TLS verification, rotated credentials, and encrypted storag
 
 The edge derives tenant from verified claims. Tenant and business context are signed claims, never an unsigned transport header. Trust Envelope v1 binds tenant, delegating workload, subject, purpose, classification, request correlation, audience, scopes, and expiry. Only registered delegators may request tenant-bound downstream tokens; fixed-tenant clients cannot change tenant. Receivers reject legacy tenant headers, missing envelopes, audience mismatch, inconsistent top-level/envelope tenants, and unsupported versions.
 
-Production uses standards-based token exchange or equivalent workload delegation while retaining the ViewSense envelope schema. Each hop obtains a new audience token rather than forwarding a human token or mutable context header. Data queries include tenant and owner/purpose predicates. Production adds policy decisions for classification, legal basis, retention, model class, connector action, and residency both before retrieval and after candidate retrieval.
+Production uses standards-based token exchange or equivalent workload delegation while retaining the ViewSense AI® envelope schema. Each hop obtains a new audience token rather than forwarding a human token or mutable context header. Data queries include tenant and owner/purpose predicates. Production adds policy decisions for classification, legal basis, retention, model class, connector action, and residency both before retrieval and after candidate retrieval.
 
 Provider admission may consult OPA through its Data API. The bundled OPA profile runs a policy
 sidecar in the governance pod; policy input contains provider metadata and requested constraints,

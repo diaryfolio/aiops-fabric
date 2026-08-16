@@ -1,6 +1,6 @@
-# ViewSense High-Level Design
+# ViewSense AI® High-Level Design
 
-This directory is the canonical architecture set for ViewSense. Read the index, then the executable
+This directory is the canonical architecture set for ViewSense AI®. Read the index, then the executable
 conformance map before using a target-state document as an implementation claim.
 
 ```mermaid

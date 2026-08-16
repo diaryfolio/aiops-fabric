@@ -45,4 +45,4 @@ printf '%s' "${openai_api_key}" | kubectl -n "${namespace}" create secret generi
 kubectl apply -k "${repo_root}/deploy/kubernetes/overlays/openai"
 kubectl -n "${namespace}" rollout status deployment/openai-adapter --timeout=180s
 kubectl -n "${namespace}" rollout status deployment/llm-gateway --timeout=180s
-echo "ViewSense now routes model requests through the OpenAI adapter using model ${model}."
+echo "ViewSense AI® now routes model requests through the OpenAI adapter using model ${model}."

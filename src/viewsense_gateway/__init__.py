@@ -1,1 +1,1 @@
-"""ViewSense north-south API gateway."""
+"""ViewSense AI® north-south API gateway."""

@@ -93,7 +93,7 @@ run_forwards() {
     CHILD_PIDS+=("$!")
   done
 
-  echo "ViewSense development port-forwards are active:"
+  echo "ViewSense AI® development port-forwards are active:"
   print_endpoints
   echo "Press Ctrl+C to stop all forwards."
 

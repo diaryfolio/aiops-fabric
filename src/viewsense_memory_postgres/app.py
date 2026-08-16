@@ -62,7 +62,7 @@ async def lifespan(_: FastAPI):
     pool = None
 
 
-app = FastAPI(title="ViewSense PostgreSQL Memory Provider", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="ViewSense AI® PostgreSQL Memory Provider", version="1.0.0", lifespan=lifespan)
 auth = TokenVerifier("memory-postgres")
 
 

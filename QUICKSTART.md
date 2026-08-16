@@ -1,4 +1,4 @@
-# ViewSense Quick Start
+# ViewSense AI® Quick Start
 
 This guide covers the development lifecycle: install once, start an existing cluster, enable an
 OpenAI provider without rebuilding everything, expose APIs locally, test the suite, and stop it
@@ -91,7 +91,7 @@ The non-secret local default is maintained in `config/models.env`:
 VS_OPENAI_MODEL=gpt-5.6-luna
 ```
 
-Use `make openai-enable-fresh` only when the ViewSense image or Kubernetes resources also need to be
+Use `make openai-enable-fresh` only when the ViewSense AI® image or Kubernetes resources also need to be
 rebuilt. Normal key or model configuration does not need an image import.
 
 To change the model later, edit that one value and update the running adapter without reading or
@@ -141,7 +141,7 @@ For a foreground session where `Ctrl+C` stops every forward:
 make ports
 ```
 
-## Test ViewSense
+## Test ViewSense AI®
 
 Run the automated Kubernetes smoke test:
 
@@ -152,7 +152,7 @@ make k8s-test
 Expected final output:
 
 ```text
-ViewSense end-to-end smoke tests passed
+ViewSense AI® end-to-end smoke tests passed
 ```
 
 With the default route, the smoke test uses the deterministic mock LLM. With the OpenAI route
@@ -166,7 +166,7 @@ observability checks.
 
 ## Stop or pause
 
-Stop only the localhost forwards while leaving ViewSense live:
+Stop only the localhost forwards while leaving ViewSense AI® live:
 
 ```bash
 make ports-stop
@@ -204,7 +204,7 @@ scripts/port-forward-dev.sh logs
 - Local port already in use: stop older manual `kubectl port-forward` processes before starting the
   managed forwarder.
 - OpenAI `401`/`403`: rotate or correct the provider key, then rerun `make openai-enable`.
-- OpenAI `429`: check project quota, rate limits, and spend controls; ViewSense will not silently
+- OpenAI `429`: check project quota, rate limits, and spend controls; ViewSense AI® will not silently
   fall back to a different provider.
 
 This development setup uses local PKI, a development issuer, single replicas, and Kubernetes

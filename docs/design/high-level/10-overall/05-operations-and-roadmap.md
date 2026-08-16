@@ -1,4 +1,4 @@
-# ViewSense Operations Baseline
+# ViewSense AI® Operations Baseline
 
 ## Target release unit
 

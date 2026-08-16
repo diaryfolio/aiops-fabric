@@ -5,7 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 namespace="viewsense-dev"
 
 if [[ "${namespace}" != "viewsense-dev" ]]; then
-  echo "refusing to run outside the ViewSense development namespace" >&2
+  echo "refusing to run outside the ViewSense AI® development namespace" >&2
   exit 1
 fi
 
@@ -47,4 +47,4 @@ probe_network_path gateway orchestrator allowed
 probe_network_path gateway ingestion blocked
 probe_network_path orchestrator memory-gateway allowed
 probe_network_path orchestrator mcp-gateway blocked
-echo "ViewSense CNI policy probes passed"
+echo "ViewSense AI® CNI policy probes passed"

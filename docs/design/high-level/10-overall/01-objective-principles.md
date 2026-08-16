@@ -1,12 +1,12 @@
-# ViewSense Objective and Principles
+# ViewSense AI® Objective and Principles
 
 ## Objective
 
-Provide enterprises with a portable control layer for AI workloads that can operate disconnected, in a private data centre, in public cloud, or across approved combinations. An application should continue to use the same ViewSense API when an enterprise changes its model runtime, memory product, vector database, workflow engine, or MCP implementation.
+Provide enterprises with a portable control layer for AI workloads that can operate disconnected, in a private data centre, in public cloud, or across approved combinations. An application should continue to use the same ViewSense AI® API when an enterprise changes its model runtime, memory product, vector database, workflow engine, or MCP implementation.
 
 ```mermaid
 flowchart LR
-    Apps["Enterprise applications"] --> Contracts["Stable ViewSense APIs"]
+    Apps["Enterprise applications"] --> Contracts["Stable ViewSense AI® APIs"]
     Contracts --> Trust["Identity + policy + evidence"]
     Trust --> Model["Replaceable model adapter"]
     Trust --> Memory["Replaceable memory adapter"]

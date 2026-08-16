@@ -12,7 +12,7 @@ from viewsense_common.auth import TokenVerifier
 from viewsense_common.client import ServiceClient
 from viewsense_common.tenant import delegated_tenant
 
-app = FastAPI(title="ViewSense Orchestrator API", version="1.0.0")
+app = FastAPI(title="ViewSense AI® Orchestrator API", version="1.0.0")
 auth = TokenVerifier("orchestrator")
 client = ServiceClient()
 MEMORY_URL = os.getenv("VS_MEMORY_URL", "https://memory-gateway:8443")

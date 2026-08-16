@@ -1,4 +1,4 @@
-# ViewSense API and Integration Standards
+# ViewSense AI® API and Integration Standards
 
 ## Contract families
 
@@ -7,7 +7,7 @@
 | public AI response | `/v1/responses` HTTP/JSON | SSE is planned |
 | model inference | OpenAI-compatible `/v1/chat/completions` subset | one configured adapter; capability discovery is planned |
 | memory | `/v1/memories` and `/v1/memories/search` | vendor-neutral record envelope |
-| MCP/tool governance | `PUT /v1/servers/{name}` and `POST /v1/tools/call` | current provider call is ViewSense-owned; native MCP transport is planned |
+| MCP/tool governance | `PUT /v1/servers/{name}` and `POST /v1/tools/call` | current provider call is ViewSense AI®-owned; native MCP transport is planned |
 | provider governance | `PUT/GET /v1/provider-passports/{name}`, evaluations, and `:admit` | admission is evaluated server-side |
 | execution evidence | `/v1/evidence-events` | append-only API; identity derives tenant and producer |
 | durable agent runs | `/v1/agent-runs`, `:resume`, `:cancel`, `/events` | idempotent create, optimistic version and ordered safe events |
@@ -46,7 +46,7 @@ flowchart LR
 
 - `Authorization: Bearer …` with exact audience and least-required scope;
 - mTLS workload identity on internal calls;
-- identity-signed ViewSense Trust Envelope v1 containing tenant, delegated caller, subject,
+- identity-signed ViewSense AI® Trust Envelope v1 containing tenant, delegated caller, subject,
   purpose, classification, and request correlation;
 - stable `X-Request-ID`; inbound `traceparent` is logged, while complete W3C propagation is planned;
 - target use of `Idempotency-Key` for retriable creates and tool calls with declared idempotency;

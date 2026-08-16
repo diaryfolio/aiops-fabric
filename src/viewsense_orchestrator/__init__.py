@@ -1,1 +1,1 @@
-"""ViewSense request orchestrator."""
+"""ViewSense AI® request orchestrator."""
