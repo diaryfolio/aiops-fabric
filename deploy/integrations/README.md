@@ -1,9 +1,9 @@
-# ViewSense Enterprise Integration Profiles
+# ViewSense AI® Enterprise Integration Profiles
 
-ViewSense does not hide upstream operators inside its application chart. Cluster-scoped products
+ViewSense AI® does not hide upstream operators inside its application chart. Cluster-scoped products
 are installed and upgraded independently, then connected through these contracts:
 
-| Product | ViewSense integration | Install ownership |
+| Product | ViewSense AI® integration | Install ownership |
 |---|---|---|
 | Mem0 OSS/Platform | `memory-mem0` REST adapter and memory conformance suite | AI platform team |
 | SPIRE | planned SPIFFE Workload API/SDS consumption; values are intent only | cluster security team |

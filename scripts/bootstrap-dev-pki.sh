@@ -36,7 +36,7 @@ if [[ -f "${env_file}" && -f "${pki_dir}/ca.crt" && -f "${pki_dir}/governance/tl
   && grep -q '"can_delegate_tenant"' "${runtime_dir}/clients.json" \
   && grep -q '^VS_GOVERNANCE_DB_PASSWORD=' "${env_file}" \
   && grep -q '^VS_AGENT_DB_PASSWORD=' "${env_file}"; then
-  echo "ViewSense development credentials already exist in ${runtime_dir}"
+  echo "ViewSense AI® development credentials already exist in ${runtime_dir}"
   exit 0
 fi
 
@@ -55,7 +55,7 @@ umask 077
 mkdir -p "${pki_dir}"
 openssl genrsa -out "${pki_dir}/ca.key" 3072 >/dev/null 2>&1
 openssl req -x509 -new -key "${pki_dir}/ca.key" -sha256 -days 30 \
-  -subj "/O=ViewSense Development/CN=ViewSense Development CA" \
+  -subj "/O=ViewSense AI® Development/CN=ViewSense AI® Development CA" \
   -out "${pki_dir}/ca.crt"
 
 services=(identity gateway orchestrator ingestion llm-gateway memory-gateway memory-postgres mcp-gateway mock-llm openai-adapter mock-mcp governance agent-runtime smoke)
@@ -64,7 +64,7 @@ for service in "${services[@]}"; do
   mkdir -p "${service_dir}"
   cp "${pki_dir}/ca.crt" "${service_dir}/ca.crt"
   openssl genrsa -out "${service_dir}/tls.key" 2048 >/dev/null 2>&1
-  openssl req -new -key "${service_dir}/tls.key" -subj "/O=ViewSense Development/CN=${service}" \
+  openssl req -new -key "${service_dir}/tls.key" -subj "/O=ViewSense AI® Development/CN=${service}" \
     -out "${service_dir}/tls.csr"
   cat >"${service_dir}/extensions.cnf" <<EOF
 basicConstraints=critical,CA:FALSE
@@ -143,4 +143,4 @@ EOF
 chmod 0600 "${env_file}"
 chmod 0444 "${runtime_dir}/clients.json" "${runtime_dir}/identity-signing.key" "${runtime_dir}/identity-signing.pub"
 find "${pki_dir}" -type f -exec chmod 0444 {} +
-echo "Created short-lived ViewSense development PKI and credentials in ${runtime_dir}"
+echo "Created short-lived ViewSense AI® development PKI and credentials in ${runtime_dir}"

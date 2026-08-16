@@ -10,7 +10,7 @@ from viewsense_common.auth import TokenVerifier
 from viewsense_common.client import ServiceClient
 from viewsense_common.tenant import delegated_tenant
 
-app = FastAPI(title="ViewSense LLM Gateway API", version="1.0.0")
+app = FastAPI(title="ViewSense AI® LLM Gateway API", version="1.0.0")
 auth = TokenVerifier("llm-gateway")
 client = ServiceClient()
 PROVIDER_URL = os.getenv("VS_LLM_PROVIDER_URL", "https://mock-llm:8443")

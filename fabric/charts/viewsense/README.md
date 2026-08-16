@@ -1,4 +1,4 @@
-# ViewSense Helm Chart
+# ViewSense AI® Helm Chart
 
 The chart is the modular installation interface. All components are independently toggled under `modules.*.enabled`; provider products are selected under `products.*`. Curated combinations live under `profiles/`; render them before installation and supply the Secrets named by the selected profile.
 
@@ -36,4 +36,4 @@ versions and then run the conformance checks in `tests/README.md`. OPA is differ
 The SPIRE socket/trust-domain, workflow product, and `otlpEndpoint` values are reserved intent: no
 SVID consumer, workflow adapter, or native application OTLP exporter is rendered today. JSON stdout
 can be collected independently. `vllm` and generic external LLM values likewise require a future
-ViewSense-compatible authentication adapter and must not be treated as a working vanilla endpoint.
+ViewSense AI®-compatible authentication adapter and must not be treated as a working vanilla endpoint.

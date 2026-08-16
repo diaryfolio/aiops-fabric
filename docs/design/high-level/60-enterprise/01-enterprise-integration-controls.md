@@ -1,6 +1,6 @@
-# ViewSense Enterprise Integration and Control Matrix
+# ViewSense AI® Enterprise Integration and Control Matrix
 
-This document is the acceptance checklist for an enterprise installation. A feature is “catered for” when ViewSense defines its boundary and integration contract; a production deployment is ready only when the enterprise-selected implementation is configured and the evidence test passes.
+This document is the acceptance checklist for an enterprise installation. A feature is “catered for” when ViewSense AI® defines its boundary and integration contract; a production deployment is ready only when the enterprise-selected implementation is configured and the evidence test passes.
 
 ```mermaid
 flowchart LR
@@ -81,7 +81,7 @@ The edge validates external enterprise tokens against configured issuer/JWKS and
 
 Keycloak is an approved integration choice, not part of the mandatory core. Use the official
 Keycloak Operator or an existing enterprise service, then configure only issuer/JWKS/audience/claim
-mapping in ViewSense. SPIRE is similarly operated at cluster scope. OPA is suited to a local sidecar
+mapping in ViewSense AI®. SPIRE is similarly operated at cluster scope. OPA is suited to a local sidecar
 for low-latency fail-closed decisions, while a centrally managed external OPA endpoint is appropriate
 only when its availability, mTLS, egress, and policy-bundle lifecycle meet the protected operation's
 SLO.
@@ -98,7 +98,7 @@ successful rendering.
 
 ```mermaid
 flowchart TB
-    Apps["ViewSense applications"] -->|"implemented"| Stdout["JSON stdout"]
+    Apps["ViewSense AI® applications"] -->|"implemented"| Stdout["JSON stdout"]
     Stdout -->|"collector-managed"| Logs["Elastic / Splunk / SIEM"]
     Apps -. "planned native export" .-> OTLP["OTLP traces/metrics"]
     Apps -. "planned endpoint" .-> Prom["OpenMetrics"]

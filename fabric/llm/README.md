@@ -8,7 +8,7 @@ executable; local vLLM/Ollama and other external providers require adapters that
 - Bundled test provider: `viewsense_mock_llm`
 - Bundled credential-isolation adapter: `viewsense_openai_adapter` (OpenAI API)
 - Helm selection: `products.llm`
-- Planned external endpoints require a ViewSense-compatible mTLS/JWT adapter, explicit HTTPS trust,
+- Planned external endpoints require a ViewSense AI®-compatible mTLS/JWT adapter, explicit HTTPS trust,
   audience grants, and fail-closed egress rules. A vanilla OpenAI-compatible endpoint is not enough.
 
 The OpenAI adapter is selected with `profiles/openai.yaml`. Only that pod receives the

@@ -1,7 +1,7 @@
 # MCP Gateway Module
 
 This module is the stable tool-provider catalog and invocation boundary. The current provider
-contract is ViewSense-owned `POST /v1/tools/call`; native MCP Streamable HTTP translation and MCP
+contract is ViewSense AI®-owned `POST /v1/tools/call`; native MCP Streamable HTTP translation and MCP
 server hosting are planned. Provider workloads remain separately deployable and do not receive
 registry/database access.
 

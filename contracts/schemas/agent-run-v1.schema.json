@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://viewsense.local/schemas/agent-run-v1.schema.json",
-  "title": "ViewSense Agent Run v1",
+  "title": "ViewSense AI® Agent Run v1",
   "type": "object",
   "required": ["objective"],
   "properties": {

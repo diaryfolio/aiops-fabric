@@ -1,8 +1,8 @@
-# ViewSense Technical Guide
+# ViewSense AI® Technical Guide
 
-ViewSense is a portable, enterprise-controlled AI backbone. It gives applications one governed API while allowing LLM runtimes, memory products, vector stores, workflow engines, and MCP servers to run locally or in approved clouds and to be replaced independently.
+ViewSense AI® is a portable, enterprise-controlled AI backbone. It gives applications one governed API while allowing LLM runtimes, memory products, vector stores, workflow engines, and MCP servers to run locally or in approved clouds and to be replaced independently.
 
-For the business overview, return to the main [README.md](README.md).
+For the business overview, return to the [main README](./).
 
 This repository contains the architecture and an executable Kubernetes reference slice. The reference proves the main boundaries without requiring a GPU or external AI account:
 
@@ -36,7 +36,7 @@ flowchart LR
     A["Platform governance client"] -->|"passport / evaluation / evidence APIs"| V["Governance API"]
     MG --> MP["Memory provider adapter"]
     LG --> LP["Mock or OpenAI adapter"]
-    XG --> XP["ViewSense mock tool provider"]
+    XG --> XP["ViewSense AI® mock tool provider"]
     LG -. "planned adapter" .-> Local["vLLM/Ollama/local runtime"]
     XG -. "planned protocol adapter" .-> NativeMCP["MCP Streamable HTTP server"]
     MP --> PGV[("PostgreSQL + pgvector")]
@@ -48,8 +48,8 @@ flowchart LR
 Solid arrows are implemented. Dashed arrows are planned. No service reads another service's
 database. Provider-specific behavior remains behind adapters.
 
-The integration model has four modes: `bundled` for a portable ViewSense reference component,
-`adapter` for a ViewSense API boundary in front of a selected product, `managed-dependency` for a
+The integration model has four modes: `bundled` for a portable ViewSense AI® reference component,
+`adapter` for a ViewSense AI® API boundary in front of a selected product, `managed-dependency` for a
 cluster/platform service operated separately, and `external` for an enterprise or cloud endpoint.
 The machine-readable list and exact readiness are in [fabric/PRODUCTS.md](fabric/PRODUCTS.md).
 
@@ -57,7 +57,7 @@ The machine-readable list and exact readiness are in [fabric/PRODUCTS.md](fabric
 
 Prerequisites: Docker, `kubectl`, `k3d`, and a current Kubernetes context that points to the intended development cluster.
 
-Use the [ViewSense quick start](QUICKSTART.md) for first installation, normal daily startup,
+Use the [ViewSense AI® quick start](QUICKSTART.md) for first installation, normal daily startup,
 cluster recovery, secure OpenAI configuration, port-forwards, testing, and shutdown.
 
 ```bash
@@ -88,7 +88,7 @@ embeddings, and single-replica databases exist to make contracts testable. Produ
 must operate enterprise OIDC, automated workload identity/certificate issuance (for example
 SPIFFE/SPIRE or a service mesh), an external secrets manager, a real embedding service, and
 production-grade model/MCP providers. Selecting a Helm profile does not install cluster-scoped
-Keycloak, SPIRE, n8n, or OpenTelemetry operators; it configures the ViewSense side of those
+Keycloak, SPIRE, n8n, or OpenTelemetry operators; it configures the ViewSense AI® side of those
 boundaries. OPA is the exception and can be deployed as the governance pod's local sidecar.
 
 Start with [the architecture index](docs/design/high-level/design_01.md) and [the deployment design](docs/design/high-level/20-deployment/01-deployment-topology-sizing.md).
@@ -97,6 +97,6 @@ for the exact routes, runtime edges, state owners, and maturity of each integrat
 
 Copy-paste validation commands, including memory and governance APIs plus negative authorization checks, are in [tests/README.md](tests/README.md).
 That guide also contains the hidden-key OpenAI setup and a real curl prompt proving that retrieved
-ViewSense memory grounds the model response.
+ViewSense AI® memory grounds the model response.
 
 All contributors and coding agents must follow the design-sync rules in [CLAUDE.md](CLAUDE.md).

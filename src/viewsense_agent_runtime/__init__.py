@@ -1,1 +1,1 @@
-"""Durable, bounded ViewSense agent runtime."""
+"""Durable, bounded ViewSense AI® agent runtime."""

@@ -1,4 +1,4 @@
-# ViewSense Fabric Module Catalog
+# ViewSense AI® Fabric Module Catalog
 
 `fabric/` is machine-readable installable product metadata, not a second copy of application source. Runtime packages live under `src/viewsense_*`; module descriptors connect them to their contracts, Helm controls, provider choices, data ownership, and maturity.
 

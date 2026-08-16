@@ -166,6 +166,8 @@ venv.bak/
 
 # mkdocs documentation
 /site
+/docs-site/
+/.venv-docs/
 
 # mypy
 .mypy_cache/
@@ -203,7 +205,7 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
-# ViewSense local runtime material (generated certificates and credentials)
+# ViewSense AI® local runtime material (generated certificates and credentials)
 .viewsense/
 .env.viewsense
 

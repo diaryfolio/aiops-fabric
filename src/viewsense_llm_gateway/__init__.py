@@ -1,1 +1,1 @@
-"""Provider-neutral ViewSense LLM gateway."""
+"""Provider-neutral ViewSense AI® LLM gateway."""

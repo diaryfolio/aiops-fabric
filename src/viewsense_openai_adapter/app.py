@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from viewsense_common.auth import TokenVerifier
 from viewsense_common.tenant import delegated_tenant
 
-app = FastAPI(title="ViewSense OpenAI Adapter", version="1.0.0")
+app = FastAPI(title="ViewSense AI® OpenAI Adapter", version="1.0.0")
 auth = TokenVerifier("openai-adapter")
 
 DEFAULT_BASE_URL = "https://api.openai.com/v1"

@@ -1,8 +1,8 @@
-# ViewSense Agent Runtime, Ingestion, and Workflow Design
+# ViewSense AI® Agent Runtime, Ingestion, and Workflow Design
 
 ## Design decision
 
-ViewSense treats “agentic” as a governed execution capability, not permission for a model to call arbitrary tools. It separates three replaceable capabilities:
+ViewSense AI® treats “agentic” as a governed execution capability, not permission for a model to call arbitrary tools. It separates three replaceable capabilities:
 
 1. **Online agent runtime:** bounded plan/act/observe execution for interactive or background goals.
 2. **Ingestion pipeline:** resumable document processing that can use deterministic and AI-assisted stages before memory/index writes.
@@ -145,7 +145,7 @@ selection intent only.
 | Kubernetes batch/GPU/data pipeline jobs | Argo Workflows adapter |
 | simple event fan-out | event bus/worker, not an agent |
 
-n8n is valuable because of its connectors, AI/tool nodes, and human-review patterns, but n8n credentials stay in its provider boundary and every action still goes through ViewSense identity/policy/MCP rules. Workflow definitions are signed/versioned; production execution data is redacted and retention-controlled.
+n8n is valuable because of its connectors, AI/tool nodes, and human-review patterns, but n8n credentials stay in its provider boundary and every action still goes through ViewSense AI® identity/policy/MCP rules. Workflow definitions are signed/versioned; production execution data is redacted and retention-controlled.
 
 ## Complete modular product suite
 
@@ -160,13 +160,13 @@ n8n is valuable because of its connectors, AI/tool nodes, and human-review patte
 | object/catalog data | S3-compatible artifacts plus governed metadata | enterprise object store and catalog |
 | agent runtime | run/checkpoint/approval/event contract | built-in graph or LangGraph-class adapter |
 | workflows | start/status/signal/cancel contract | n8n, Temporal, Argo Workflows |
-| tools/connectors | governed tool/MCP gateway/runtime | ViewSense mock now; native MCP adapter planned |
+| tools/connectors | governed tool/MCP gateway/runtime | ViewSense AI® mock now; native MCP adapter planned |
 | evaluation/guardrails | dataset/run/score/promotion contract | offline and online evaluation providers |
 | observability/SIEM | JSON, OpenMetrics, OTLP, audit events | enterprise collector to Elastic/Splunk/etc. |
 | operations/FinOps | SLO, usage, quota, chargeback APIs | enterprise dashboards, ITSM, cost systems |
 
-Selection order is security/residency → capability/quality → reliability/operability → cost. Product names stay in Helm/operator provider configuration; callers see only ViewSense contracts.
+Selection order is security/residency → capability/quality → reliability/operability → cost. Product names stay in Helm/operator provider configuration; callers see only ViewSense AI® contracts.
 
 ## Operator roadmap
 
-Helm installs chosen modules. A future ViewSense operator should reconcile custom resources such as `ModelProvider`, `MemoryProvider`, `MCPServer`, `WorkflowProvider`, `AgentProfile`, and `IngestionPipeline`; validate conformance/certification; roll credentials; publish readiness; and block incompatible or policy-violating provider changes. It must not become a second workflow engine or store provider secrets in status.
+Helm installs chosen modules. A future ViewSense AI® operator should reconcile custom resources such as `ModelProvider`, `MemoryProvider`, `MCPServer`, `WorkflowProvider`, `AgentProfile`, and `IngestionPipeline`; validate conformance/certification; roll credentials; publish readiness; and block incompatible or policy-violating provider changes. It must not become a second workflow engine or store provider secrets in status.

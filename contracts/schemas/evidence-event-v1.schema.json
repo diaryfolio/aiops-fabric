@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://viewsense.local/schemas/evidence-event-v1.schema.json",
-  "title": "ViewSense Evidence Event v1 Input",
+  "title": "ViewSense AI® Evidence Event v1 Input",
   "type": "object",
   "required": ["run_id", "event_type", "outcome"],
   "properties": {

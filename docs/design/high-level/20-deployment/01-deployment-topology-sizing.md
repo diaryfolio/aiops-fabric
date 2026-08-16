@@ -1,4 +1,4 @@
-# ViewSense Kubernetes Deployment Design
+# ViewSense AI® Kubernetes Deployment Design
 
 ## Canonical packaging
 
@@ -52,7 +52,7 @@ The current manifests intentionally touch only `viewsense-dev`. Production overl
 
 1. Verify context, namespace, admission policies, storage class, ingress, DNS, and network-policy enforcement.
 2. Install workload identity/certificate automation and external secret synchronization.
-3. Create the ViewSense namespaces and default-deny policies.
+3. Create the ViewSense AI® namespaces and default-deny policies.
 4. Install owned data services or bind to managed equivalents, including the isolated governance store.
 5. Deploy identity/policy and governance dependencies, provider adapters, control services, then edge.
 6. Run conformance and zero-trust negative tests before accepting traffic.
@@ -60,13 +60,13 @@ The current manifests intentionally touch only `viewsense-dev`. Production overl
 
 ## Product installation modes
 
-- `bundled`: ViewSense deploys and tests the component and owns its lifecycle, such as the bounded
+- `bundled`: ViewSense AI® deploys and tests the component and owns its lifecycle, such as the bounded
   agent runtime and PostgreSQL/pgvector reference provider.
-- `adapter`: ViewSense deploys the contract/credential boundary while the product is separate, such
+- `adapter`: ViewSense AI® deploys the contract/credential boundary while the product is separate, such
   as the Mem0 adapter.
 - `managed-dependency`: a platform team installs the cluster service with its upstream lifecycle,
   such as SPIRE, an OpenTelemetry Collector, or external secrets.
-- `external`: ViewSense configures an authenticated endpoint, such as Keycloak/OIDC, a cloud LLM,
+- `external`: ViewSense AI® configures an authenticated endpoint, such as Keycloak/OIDC, a cloud LLM,
   or a workflow system.
 
 The `enterprise-suite` profile describes integration intent. It does not create cluster-scoped
@@ -75,7 +75,7 @@ because it is a stateless local policy decision point with a narrow loopback API
 managed selection requires credentials, CA trust, explicit egress, conformance tests, version
 pinning, upgrade/rollback ownership, and a provider passport before production routing.
 
-The `openai` Helm profile deploys only the ViewSense `openai-adapter`; it does not create or manage
+The `openai` Helm profile deploys only the ViewSense AI® `openai-adapter`; it does not create or manage
 an OpenAI account. Its local default model is read from `config/models.env` and currently resolves
 to `gpt-5.6-luna`. The model is non-secret, but the development overlay stores it beside the API key
 in the provider Secret so the adapter receives one provider configuration. The model remains
@@ -88,9 +88,9 @@ deletes the development credential Secret and adapter resources.
 
 ```mermaid
 flowchart LR
-    Values["Helm values/profile"] --> Render["ViewSense workloads"]
+    Values["Helm values/profile"] --> Render["ViewSense AI® workloads"]
     Render --> Bundled["bundled services and databases"]
-    Render --> Adapter["selected ViewSense adapter"]
+    Render --> Adapter["selected ViewSense AI® adapter"]
     Render -. "intent only" .-> Managed["Keycloak / SPIRE / Collector operator"]
     Render -. "planned adapter" .-> Workflow["n8n / Temporal / Argo"]
     Adapter --> External["enterprise-managed upstream product"]

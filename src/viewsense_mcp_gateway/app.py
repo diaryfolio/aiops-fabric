@@ -40,7 +40,7 @@ async def lifespan(_: FastAPI):
     pool = None
 
 
-app = FastAPI(title="ViewSense MCP Gateway API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="ViewSense AI® MCP Gateway API", version="1.0.0", lifespan=lifespan)
 auth = TokenVerifier("mcp-gateway")
 client = ServiceClient()
 ALLOWED_HOSTS = csv("VS_MCP_ALLOWED_HOSTS", "mock-mcp")

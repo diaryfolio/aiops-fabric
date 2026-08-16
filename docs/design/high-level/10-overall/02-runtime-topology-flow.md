@@ -1,4 +1,4 @@
-# ViewSense Runtime Topology and Flows
+# ViewSense AI® Runtime Topology and Flows
 
 ## Planes and trust boundaries
 
@@ -59,7 +59,7 @@ workflow callbacks are planned.
    provider-specific payloads do not escape the canonical response.
 5. The LLM gateway forwards to one deployment-configured OpenAI-compatible adapter. Dynamic
    capability routing is not implemented.
-   For OpenAI, it calls an internal ViewSense adapter using mTLS and a tenant-bound
+   For OpenAI, it calls an internal ViewSense AI® adapter using mTLS and a tenant-bound
    `provider.invoke` token. That adapter alone exchanges the server-held API key with the pinned
    OpenAI HTTPS API; callers cannot select the outbound host or provider model.
 6. The response returns with a request ID, model identifier, and memory-hit count. When `remember` is

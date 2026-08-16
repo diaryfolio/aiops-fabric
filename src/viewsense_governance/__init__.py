@@ -1,1 +1,1 @@
-"""ViewSense provider admission and safe evidence reference service."""
+"""ViewSense AI® provider admission and safe evidence reference service."""

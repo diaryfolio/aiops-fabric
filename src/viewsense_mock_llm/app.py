@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from viewsense_common.auth import TokenVerifier
 from viewsense_common.tenant import delegated_tenant
 
-app = FastAPI(title="ViewSense Mock LLM Adapter", version="1.0.0")
+app = FastAPI(title="ViewSense AI® Mock LLM Adapter", version="1.0.0")
 auth = TokenVerifier("mock-llm")
 
 
@@ -27,7 +27,7 @@ async def completions(request: Request) -> dict:
         str(item.get("content", "")) for item in messages if item.get("role") == "user"
     ]
     prompt = user_messages[-1] if user_messages else ""
-    content = f"ViewSense mock response: {prompt}"
+    content = f"ViewSense AI® mock response: {prompt}"
     return {
         "id": f"chatcmpl-{uuid.uuid4().hex}",
         "object": "chat.completion",

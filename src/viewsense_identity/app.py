@@ -13,7 +13,7 @@ from fastapi import FastAPI, HTTPException, Request
 
 from viewsense_common.settings import read_required, required
 
-app = FastAPI(title="ViewSense Identity", version="0.1.0")
+app = FastAPI(title="ViewSense AI® Identity", version="0.1.0")
 ISSUER = os.getenv("VS_IDENTITY_ISSUER", "https://identity:8443")
 PRIVATE_KEY = read_required("VS_IDENTITY_PRIVATE_KEY_FILE")
 CLIENTS = json.loads(Path(required("VS_IDENTITY_CLIENTS_FILE")).read_text(encoding="utf-8"))

@@ -22,4 +22,4 @@ kubectl -n "${namespace}" patch secret openai-credentials \
   --patch "{\"stringData\":{\"model\":\"${model}\"}}" >/dev/null
 kubectl -n "${namespace}" rollout restart deployment/openai-adapter
 kubectl -n "${namespace}" rollout status deployment/openai-adapter --timeout=180s
-echo "ViewSense OpenAI adapter now uses model ${model}; the API key was not read or replaced."
+echo "ViewSense AI® OpenAI adapter now uses model ${model}; the API key was not read or replaced."

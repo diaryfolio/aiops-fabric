@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://viewsense.local/schemas/provider-passport-v1.schema.json",
-  "title": "ViewSense Provider Passport v1",
+  "title": "ViewSense AI® Provider Passport v1",
   "type": "object",
   "required": ["name", "kind", "endpoint", "residencies", "data_classifications", "owner", "expires_at"],
   "properties": {

@@ -12,7 +12,7 @@ from viewsense_common.client import ServiceClient
 from viewsense_common.tenant import delegated_tenant
 from viewsense_ingestion.chunking import chunk_text
 
-app = FastAPI(title="ViewSense Ingestion API", version="1.0.0")
+app = FastAPI(title="ViewSense AI® Ingestion API", version="1.0.0")
 auth = TokenVerifier("ingestion")
 client = ServiceClient()
 MEMORY_URL = os.getenv("VS_MEMORY_URL", "https://memory-gateway:8443")

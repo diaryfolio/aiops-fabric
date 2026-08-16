@@ -1,1 +1,1 @@
-"""Provider-neutral ViewSense memory gateway."""
+"""Provider-neutral ViewSense AI® memory gateway."""

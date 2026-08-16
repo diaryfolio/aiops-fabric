@@ -1,4 +1,4 @@
-ViewSense {{ .Chart.AppVersion }} rendered as modular release {{ .Release.Name }}.
+ViewSense AI® {{ .Chart.AppVersion }} rendered as modular release {{ .Release.Name }}.
 
 Selected products:
   Identity: {{ .Values.products.identity.product }}

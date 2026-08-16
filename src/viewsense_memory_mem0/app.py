@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from viewsense_common.auth import TokenVerifier
 from viewsense_common.tenant import delegated_tenant
 
-app = FastAPI(title="ViewSense Mem0 Memory Adapter", version="1.0.0")
+app = FastAPI(title="ViewSense AI® Mem0 Memory Adapter", version="1.0.0")
 auth = TokenVerifier("memory-mem0")
 MEM0_URL = os.getenv("VS_MEM0_URL", "https://mem0.example.invalid").rstrip("/")
 MEM0_API_KEY = os.getenv("VS_MEM0_API_KEY", "")

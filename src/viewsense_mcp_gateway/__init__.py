@@ -1,1 +1,1 @@
-"""ViewSense MCP registry and invocation policy gateway."""
+"""ViewSense AI® MCP registry and invocation policy gateway."""

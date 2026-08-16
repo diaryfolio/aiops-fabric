@@ -1,1 +1,1 @@
-"""Credential-isolated OpenAI provider adapter for the ViewSense LLM contract."""
+"""Credential-isolated OpenAI provider adapter for the ViewSense AI® LLM contract."""

@@ -1,6 +1,6 @@
 # Workflow Provider Module
 
-Workflow engines integrate behind a ViewSense start/status/signal/cancel/event contract.
+Workflow engines integrate behind a ViewSense AI® start/status/signal/cancel/event contract.
 
 - n8n: best suited to triggers, broad SaaS integration, low-code business automation, and approval channels.
 - Temporal: best suited to long-lived durable execution, timers, retries, and compensation.

@@ -1,4 +1,4 @@
-# ViewSense Delivery Roadmap and Maturity
+# ViewSense AI® Delivery Roadmap and Maturity
 
 ## Delivery strategy
 
