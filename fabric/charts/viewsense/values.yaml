@@ -30,6 +30,12 @@ products:
     externalEgress: []
     # - cidr: 203.0.113.10/32
     #   port: 443
+    openai:
+      baseUrl: https://api.openai.com/v1
+      model: gpt-4.1-mini
+      credentialsSecret: openai-credentials
+      # Use explicit provider CIDRs or an enterprise CNI FQDN/egress-proxy policy.
+      externalEgress: []
   memory:
     product: postgres-pgvector
     endpoint: https://memory-postgres:8443
@@ -127,7 +133,7 @@ modules:
     clientId: llm-gateway
     clientSecretKey: llm-gateway
     ingressFrom: [orchestrator]
-    egressTo: [identity, mock-llm]
+    egressTo: [identity, mock-llm, openai-adapter]
     resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
   mock-llm:
     enabled: true
@@ -137,6 +143,14 @@ modules:
     ingressFrom: [llm-gateway]
     egressTo: []
     resources: {requests: {cpu: 25m, memory: 64Mi}, limits: {cpu: 250m, memory: 192Mi}}
+  openai-adapter:
+    enabled: true
+    appModule: viewsense_openai_adapter.app
+    plane: llm-provider
+    tlsSecret: tls-openai-adapter
+    ingressFrom: [llm-gateway]
+    egressTo: []
+    resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 500m, memory: 256Mi}}
   memory-gateway:
     enabled: true
     appModule: viewsense_memory_gateway.app

@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: viewsense-dev
+resources:
+  - ../../base
+  - openai-adapter.yaml
+  - network-policies.yaml
+patches:
+  - target:
+      kind: Deployment
+      name: llm-gateway
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: llm-gateway
+      spec:
+        template:
+          spec:
+            containers:
+              - name: llm-gateway
+                env:
+                  - {name: VS_LLM_PROVIDER_URL, value: "https://openai-adapter:8443"}
+                  - {name: VS_LLM_PROVIDER_AUDIENCE, value: openai-adapter}

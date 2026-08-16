@@ -84,8 +84,8 @@ make ports-status
 make ports-stop
 ```
 
-The manager exposes identity `9444`, memory `9445`, governance `9446`, and agent runtime `9447` on
-`127.0.0.1` only. Background logs are available with
+The manager exposes the public gateway `9443`, identity `9444`, memory `9445`, governance `9446`,
+and agent runtime `9447` on `127.0.0.1` only. Background logs are available with
 `scripts/port-forward-dev.sh logs`.
 
 In a third terminal, load the development credentials without printing them and request a short-lived token:
@@ -153,7 +153,103 @@ jq
 
 Expected: the write returns an ID and the search returns the London record in `items`.
 
-## 5. Durable agent API validation
+## 5. Real OpenAI memory-grounding validation
+
+This optional test incurs OpenAI API usage. Never paste the key into chat, a command argument, a
+values file, or Git. Configure the isolated adapter using the hidden terminal prompt (the default
+model is `gpt-4.1-mini`):
+
+```bash
+make openai-enable
+make ports-start
+```
+
+`openai-enable` rebuilds the development image, generates the adapter identity, stores the key in
+the `openai-credentials` Kubernetes Secret, and switches only the LLM gateway route. The key is
+mounted only in `openai-adapter`; the gateway, orchestrator, memory services, and client never
+receive it.
+
+Load the generated development client secret and obtain separate least-privilege tokens:
+
+```bash
+set -a
+source .env.viewsense
+set +a
+
+MEMORY_TOKEN="$(
+  curl --silent --show-error --fail \
+    --cacert .viewsense/pki/smoke/ca.crt \
+    --cert .viewsense/pki/smoke/tls.crt \
+    --key .viewsense/pki/smoke/tls.key \
+    --user "smoke:${VS_SMOKE_CLIENT_SECRET}" \
+    --header "Content-Type: application/x-www-form-urlencoded" \
+    --data-urlencode "grant_type=client_credentials" \
+    --data-urlencode "audience=memory-gateway" \
+    --data-urlencode "scope=memory.write" \
+    https://localhost:9444/oauth2/token | jq -r '.access_token'
+)"
+
+GATEWAY_TOKEN="$(
+  curl --silent --show-error --fail \
+    --cacert .viewsense/pki/smoke/ca.crt \
+    --cert .viewsense/pki/smoke/tls.crt \
+    --key .viewsense/pki/smoke/tls.key \
+    --user "smoke:${VS_SMOKE_CLIENT_SECRET}" \
+    --header "Content-Type: application/x-www-form-urlencoded" \
+    --data-urlencode "grant_type=client_credentials" \
+    --data-urlencode "audience=gateway" \
+    --data-urlencode "scope=api.invoke" \
+    https://localhost:9444/oauth2/token | jq -r '.access_token'
+)"
+```
+
+Insert a harmless, unique test memory:
+
+```bash
+curl --silent --show-error --fail-with-body \
+  --cacert .viewsense/pki/smoke/ca.crt \
+  --cert .viewsense/pki/smoke/tls.crt \
+  --key .viewsense/pki/smoke/tls.key \
+  --header "Authorization: Bearer ${MEMORY_TOKEN}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "owner_id": "openai-memory-demo",
+    "content": "For the ViewSense integration test, the approval phrase is cobalt-canary-731.",
+    "metadata": {"source":"openai-memory-test","classification":"internal"}
+  }' \
+  https://localhost:9445/v1/memories | jq
+```
+
+Now prompt the public API. `remember:false` avoids writing the answer back into memory:
+
+```bash
+curl --silent --show-error --fail-with-body \
+  --cacert .viewsense/pki/smoke/ca.crt \
+  --cert .viewsense/pki/smoke/tls.crt \
+  --key .viewsense/pki/smoke/tls.key \
+  --header "Authorization: Bearer ${GATEWAY_TOKEN}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "user_id": "openai-memory-demo",
+    "input": "What is the ViewSense integration test approval phrase? Answer with only the phrase.",
+    "remember": false
+  }' \
+  https://localhost:9443/v1/responses |
+jq '{output_text, memory_hits, model, request_id}'
+```
+
+Expected: `memory_hits` is at least `1`, `output_text` contains `cobalt-canary-731`, and `model`
+shows the configured OpenAI model. This proves the answer path used the inserted tenant/owner-bound
+memory; it does not by itself certify production data-residency or model quality controls.
+
+Return to the deterministic mock and delete the development OpenAI Secret:
+
+```bash
+make openai-disable
+make ports-stop
+```
+
+## 6. Durable agent API validation
 
 Keep the forwards from section 4 running; the agent runtime is already available on port `9447`.
 
@@ -273,7 +369,7 @@ curl --silent --show-error --fail-with-body \
 Expected: the terminal state is `completed`; events are sequences 1 through 6. A stale
 `expected_version`, invalid state transition, or exhausted step budget returns `409`.
 
-## 6. Provider governance and evidence API validation
+## 7. Provider governance and evidence API validation
 
 Keep the forwards from section 4 running; governance is already available on port `9446`.
 
@@ -352,7 +448,7 @@ Expected: the admission response contains `"admitted": true`. The end-to-end smo
 writes and reads a payload-minimized evidence event and verifies that tenant spoofing through
 `X-ViewSense-Tenant` is rejected.
 
-## 7. Negative authorization validation
+## 8. Negative authorization validation
 
 A request without a bearer token must return `401`:
 
@@ -407,7 +503,7 @@ curl --silent --output /dev/null --write-out '%{http_code}\n' \
   https://localhost:9445/v1/memories/search
 ```
 
-## 8. Mem0, OPA, Keycloak, SPIRE, workflow, and telemetry profiles
+## 9. Mem0, OPA, Keycloak, SPIRE, workflow, and telemetry profiles
 
 These checks separate repository evidence from tests that require the selected enterprise product.
 
@@ -475,7 +571,7 @@ stdout is the validated baseline. Send logs through the chosen collector to Elas
 single-line JSON parsing, request correlation, Kubernetes metadata enrichment, redaction, backpressure,
 and that tokens/prompts/memory/tool payloads are absent.
 
-## 9. API schema and JSON logs
+## 10. API schema and JSON logs
 
 Download the live OpenAPI document:
 

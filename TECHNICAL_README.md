@@ -7,7 +7,7 @@ For the business overview, return to the main [README.md](README.md).
 This repository contains the architecture and an executable Kubernetes reference slice. The reference proves the main boundaries without requiring a GPU or external AI account:
 
 - edge API and request orchestrator;
-- OpenAI-compatible LLM gateway with a deterministic mock provider;
+- OpenAI-compatible LLM gateway with a deterministic mock and a credential-isolated OpenAI adapter;
 - vendor-neutral memory gateway with a PostgreSQL/pgvector provider;
 - a zero-trust Mem0 OSS/Platform adapter behind that same memory contract;
 - MCP registry and invocation gateway with a test provider;
@@ -18,7 +18,10 @@ This repository contains the architecture and an executable Kubernetes reference
 - deny-by-default Kubernetes network policies and separate data stores;
 - cryptographically bound Trust Envelope delegation plus provider passport, evaluation-admission, and safe evidence APIs.
 
-The mock LLM and deterministic embedding are test adapters, not production AI models. Replace them with vLLM, OpenAI, Azure OpenAI, Mem0, or another contract-conforming provider without changing callers.
+The mock LLM and deterministic embedding are test adapters, not production AI models. The OpenAI
+adapter provides a real optional cloud path without exposing its key outside the provider pod.
+Replace providers with vLLM, Azure OpenAI, Mem0, or another contract-conforming implementation
+without changing callers.
 
 ## Architecture
 
@@ -81,5 +84,7 @@ boundaries. OPA is the exception and can be deployed as the governance pod's loc
 Start with [the architecture index](docs/design/high-level/design_01.md) and [the deployment design](docs/design/high-level/20-deployment/01-deployment-topology-sizing.md).
 
 Copy-paste validation commands, including memory and governance APIs plus negative authorization checks, are in [tests/README.md](tests/README.md).
+That guide also contains the hidden-key OpenAI setup and a real curl prompt proving that retrieved
+ViewSense memory grounds the model response.
 
 All contributors and coding agents must follow the design-sync rules in [CLAUDE.md](CLAUDE.md).

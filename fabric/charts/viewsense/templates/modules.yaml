@@ -88,6 +88,11 @@ spec:
             {{- else if eq $name "llm-gateway" }}
             - {name: VS_LLM_PROVIDER_URL, value: {{ $.Values.products.llm.endpoint | quote }}}
             - {name: VS_LLM_PROVIDER_AUDIENCE, value: {{ $.Values.products.llm.audience | quote }}}
+            {{- else if eq $name "openai-adapter" }}
+            - {name: VS_OPENAI_BASE_URL, value: {{ $.Values.products.llm.openai.baseUrl | quote }}}
+            - {name: VS_OPENAI_MODEL, value: {{ $.Values.products.llm.openai.model | quote }}}
+            - name: VS_OPENAI_API_KEY
+              valueFrom: {secretKeyRef: {name: {{ $.Values.products.llm.openai.credentialsSecret }}, key: api-key}}
             {{- else if eq $name "memory-gateway" }}
             - {name: VS_MEMORY_PROVIDER_URL, value: {{ $.Values.products.memory.endpoint | quote }}}
             - {name: VS_MEMORY_PROVIDER_AUDIENCE, value: {{ $.Values.products.memory.audience | quote }}}

@@ -65,7 +65,11 @@ ViewSense is not another foundation model, vector database, low-code workflow ed
 
 ## Current maturity
 
-The repository contains an executable reference covering secure APIs, model routing, PostgreSQL/pgvector memory, a Mem0 adapter, MCP governance, ingestion, durable bounded agent runs, Kubernetes deployment, structured logs, and end-to-end tests. The Trust Envelope and governance foundation provide signed tenant delegation, provider passports, evaluation admission, optional OPA decisions, and append-only evidence metadata.
+The repository contains an executable reference covering secure APIs, model routing, a
+credential-isolated OpenAI adapter, PostgreSQL/pgvector memory, a Mem0 adapter, MCP governance,
+ingestion, durable bounded agent runs, Kubernetes deployment, structured logs, and end-to-end
+tests. The Trust Envelope and governance foundation provide signed tenant delegation, provider
+passports, evaluation admission, optional OPA decisions, and append-only evidence metadata.
 
 External OIDC/Keycloak configuration is available at the edge, and Helm profiles record SPIRE,
 OpenTelemetry, and workflow integration intent. Production-grade identity operations, SPIRE/mesh

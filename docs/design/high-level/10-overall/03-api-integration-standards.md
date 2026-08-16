@@ -16,6 +16,12 @@
 
 Every published HTTP contract exposes OpenAPI, uses a major version in the path, and has consumer-driven contract tests. Provider adapters are admitted only after passing the relevant conformance suite.
 
+The bundled OpenAI adapter implements the internal non-streaming chat-completions subset used by
+the orchestrator. It accepts only text `system`, `user`, and `assistant` messages, discards
+unrecognized outbound fields, selects the configured model server-side, and pins the upstream base
+URL to `https://api.openai.com/v1`. This is an additive provider implementation; the public
+`/v1/responses` contract is unchanged.
+
 ## Required request context
 
 - `Authorization: Bearer …` with exact audience and least-required scope;

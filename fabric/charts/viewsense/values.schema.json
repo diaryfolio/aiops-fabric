@@ -10,12 +10,22 @@
         "identity": {"type": "object", "required": ["product", "issuer", "jwksUrl", "audience", "tenantClaim", "scopeClaim", "externalEgress"], "properties": {"product": {"enum": ["development", "external-oidc", "keycloak-oidc"]}, "issuer": {"type": "string"}, "jwksUrl": {"type": "string"}, "audience": {"type": "string", "minLength": 1}, "tenantClaim": {"type": "string", "minLength": 1}, "scopeClaim": {"type": "string", "minLength": 1}, "externalEgress": {"$ref": "#/$defs/externalEgress"}}},
         "llm": {
           "type": "object",
-          "required": ["product", "endpoint", "audience"],
+          "required": ["product", "endpoint", "audience", "openai"],
           "properties": {
-            "product": {"enum": ["mock-openai-compatible", "vllm", "openai-compatible-external"]},
+            "product": {"enum": ["mock-openai-compatible", "openai-adapter", "vllm", "openai-compatible-external"]},
             "endpoint": {"type": "string", "pattern": "^https://"},
             "audience": {"type": "string", "minLength": 1},
-            "externalEgress": {"$ref": "#/$defs/externalEgress"}
+            "externalEgress": {"$ref": "#/$defs/externalEgress"},
+            "openai": {
+              "type": "object",
+              "required": ["baseUrl", "model", "credentialsSecret", "externalEgress"],
+              "properties": {
+                "baseUrl": {"const": "https://api.openai.com/v1"},
+                "model": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+                "credentialsSecret": {"type": "string", "minLength": 1},
+                "externalEgress": {"$ref": "#/$defs/externalEgress"}
+              }
+            }
           }
         },
         "memory": {

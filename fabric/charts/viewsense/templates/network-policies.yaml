@@ -61,7 +61,7 @@ spec:
   {{- else }}
   ingress: []
   {{- end }}
-  {{- if or $module.egressTo (and (eq $name "memory-mem0") (or $.Values.products.memory.mem0.externalEgress $.Values.products.memory.mem0.inCluster.enabled)) }}
+  {{- if or $module.egressTo (and (eq $name "openai-adapter") $.Values.products.llm.openai.externalEgress) (and (eq $name "memory-mem0") (or $.Values.products.memory.mem0.externalEgress $.Values.products.memory.mem0.inCluster.enabled)) }}
   egress:
     {{- range $destination := $module.egressTo }}
     {{- if eq (include "viewsense.destinationEnabled" (list $destination $)) "true" }}
@@ -75,8 +75,14 @@ spec:
           port: {{ if or (eq $destination "memory-db") (eq $destination "registry-db") (eq $destination "governance-db") (eq $destination "agent-db") }}5432{{ else }}8443{{ end }}
     {{- end }}
     {{- end }}
-    {{- if and (eq $name "llm-gateway") (ne $.Values.products.llm.product "mock-openai-compatible") }}
+    {{- if and (eq $name "llm-gateway") (or (eq $.Values.products.llm.product "vllm") (eq $.Values.products.llm.product "openai-compatible-external")) }}
     {{- range $rule := $.Values.products.llm.externalEgress }}
+    - to: [{ipBlock: {cidr: {{ $rule.cidr | quote }}}}]
+      ports: [{protocol: TCP, port: {{ $rule.port }}}]
+    {{- end }}
+    {{- end }}
+    {{- if eq $name "openai-adapter" }}
+    {{- range $rule := $.Values.products.llm.openai.externalEgress }}
     - to: [{ipBlock: {cidr: {{ $rule.cidr | quote }}}}]
       ports: [{protocol: TCP, port: {{ $rule.port }}}]
     {{- end }}

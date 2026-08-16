@@ -8,13 +8,10 @@ Examples:
 # Default full reference: durable agents + mock LLM + PostgreSQL/pgvector + mock MCP
 helm upgrade --install viewsense ./fabric/charts/viewsense -n viewsense-dev
 
-# External OpenAI-compatible model endpoint; bundled mock is omitted
+# OpenAI through the bundled credential-isolation adapter; mock is omitted.
+# Create openai-credentials and a CNI FQDN/egress-proxy policy (or explicit CIDRs) first.
 helm upgrade --install viewsense ./fabric/charts/viewsense -n viewsense-dev \
-  --set products.llm.product=openai-compatible-external \
-  --set products.llm.endpoint=https://llm-gateway.enterprise.example/v1 \
-  --set products.llm.audience=enterprise-llm \
-  --set products.llm.externalEgress[0].cidr=203.0.113.10/32 \
-  --set products.llm.externalEgress[0].port=443
+  -f ./fabric/charts/viewsense/profiles/openai.yaml
 
 # Mem0 OSS through the bundled zero-trust adapter
 helm upgrade --install viewsense ./fabric/charts/viewsense -n viewsense-dev \
@@ -26,6 +23,10 @@ helm template viewsense ./fabric/charts/viewsense \
 ```
 
 External endpoints require matching identity grants, CA trust, egress policy, and Secrets from the enterprise overlay. With the built-in NetworkPolicies, each external provider also needs an explicit `externalEgress` CIDR/port rule; an empty list fails closed. The Mem0 OSS profile instead uses an exact namespace/pod-label/port selector for its managed in-cluster server. Use a CNI FQDN policy extension when endpoint addresses are dynamic. `values.schema.json` rejects unknown product names, non-HTTPS endpoints, and malformed egress entries. For production, use immutable image digests and external secret/workload-identity integrations.
+
+For OpenAI, only `openai-adapter` receives the `api-key` field from the configured Secret. The
+adapter pins `https://api.openai.com/v1`, controls the model server-side, and needs outbound HTTPS;
+production should use an egress proxy or CNI FQDN policy rather than a broad Internet CIDR.
 
 The enterprise profile declares desired integrations; it does not install cluster-scoped Keycloak,
 SPIRE, n8n, or OpenTelemetry operators. Platform teams install those upstream products with pinned

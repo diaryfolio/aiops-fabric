@@ -1,4 +1,4 @@
-.PHONY: bootstrap lint unit catalog-check profile-check compose-up compose-test k8s-deploy k8s-test ports ports-start ports-stop ports-status
+.PHONY: bootstrap lint unit catalog-check profile-check compose-up compose-test k8s-deploy k8s-test openai-enable openai-disable ports ports-start ports-stop ports-status
 
 bootstrap:
 	./scripts/bootstrap-dev-pki.sh
@@ -35,6 +35,12 @@ k8s-deploy:
 
 k8s-test:
 	./scripts/k8s-test.sh
+
+openai-enable: k8s-deploy
+	./scripts/configure-openai-dev.sh
+
+openai-disable:
+	./scripts/disable-openai-dev.sh
 
 ports:
 	./scripts/port-forward-dev.sh foreground

@@ -12,6 +12,7 @@ Compromise of one component must not grant implicit access to another component,
 | edge → orchestrator | workload mTLS + audience token | `orchestrate.invoke` | explicit NetworkPolicy |
 | orchestrator → gateway | workload mTLS + audience token | capability-specific scope | no provider credential in orchestrator |
 | gateway → provider | workload mTLS + provider audience | `provider.invoke`, provider policy | dedicated provider network/namespace |
+| OpenAI adapter → OpenAI | server-held API key + HTTPS | provider project/model limits | adapter-only Secret and constrained public egress |
 | provider → database | database identity and TLS | owner schema/user only | only owning provider can reach store |
 | MCP → enterprise system | connector workload identity | per-tool/action/data policy | egress allow-list and isolated credentials |
 
@@ -59,6 +60,13 @@ MCP servers and returned content are untrusted. Controls include exact HTTPS hos
 
 Production secrets originate in Vault or a cloud secret manager, arrive through workload identity, rotate automatically, and are never present in Git or images. Certificates are short-lived and automatically renewed. Databases, backups, and object storage use enterprise-managed encryption keys. Algorithms and issuers are configuration with a tested rotation/overlap procedure.
 
+The development OpenAI key is entered through a non-echoing terminal prompt and piped to a
+namespaced Kubernetes Secret without appearing in command arguments or repository files. Only the
+adapter pod references that Secret. Application logs never include request bodies, authorization
+headers, upstream error bodies, or the key. Production replaces this manual Secret with external
+secret synchronization, provider-side project restrictions, rotation, usage alerts, and immediate
+revocation procedures.
+
 ## Supply chain
 
 CI generates SBOMs, scans dependencies/images/IaC, signs artifacts and provenance, and admits only trusted digests. Pods use restricted security contexts. Provider and MCP adapter additions require threat modeling, conformance tests, and review of their network and secret permissions.
@@ -76,3 +84,6 @@ CI generates SBOMs, scans dependencies/images/IaC, signs artifacts and provenanc
 - OIDC wrong issuer/audience/algorithm, missing tenant/scope, stale key, and JWKS outage;
 - OPA timeout/malformed/deny and SPIFFE ID/SVID rotation or spoof failures;
 - agent approval with `agent.run` only, stale version replay, invalid state transition, and budget exhaustion.
+- OpenAI key absent/revoked, upstream 401/429/timeout/malformed response, caller model override,
+  upstream URL/redirect manipulation, direct non-adapter egress, and credential absence from all
+  gateway/orchestrator pod specifications and logs.

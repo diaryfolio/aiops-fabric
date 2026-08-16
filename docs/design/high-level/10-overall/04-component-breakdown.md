@@ -10,7 +10,14 @@ Owns a bounded request state machine: policy evaluation, context assembly, infer
 
 ## LLM gateway
 
-Normalizes model IDs, capabilities, errors, token usage, routing, deadlines, and provider credentials. Local vLLM/Ollama and cloud OpenAI/Azure/other endpoints are adapters. The gateway must not store conversation memory.
+Normalizes model IDs, capabilities, errors, token usage, routing, and deadlines. Local vLLM/Ollama
+and cloud OpenAI/Azure/other endpoints are adapters. Provider credentials belong only to the owning
+adapter, not the LLM gateway. The gateway must not store conversation memory.
+
+The bundled OpenAI adapter translates the internal mTLS/scoped-token request into an OpenAI Bearer
+request. It owns the API key, exact upstream URL, configured model, outbound field minimization,
+timeout, and safe error translation. It owns no memory: retrieved memory reaches it only as bounded
+request context assembled by the orchestrator.
 
 ## Memory gateway and providers
 
@@ -67,7 +74,7 @@ All components emit OpenTelemetry metrics/traces/log correlation. Security audit
 
 | Capability | Reference slice | Replaceable examples |
 |---|---|---|
-| LLM provider | deterministic mock | vLLM, Ollama, OpenAI, Azure OpenAI |
+| LLM provider | deterministic mock; OpenAI credential adapter | vLLM, Ollama, Azure OpenAI |
 | memory provider | PostgreSQL + pgvector; Mem0 adapter | Qdrant adapter, managed vector service |
 | agent runtime | persistent bounded state machine | LangGraph-compatible adapter |
 | MCP provider | echo test server | certified enterprise MCP servers |

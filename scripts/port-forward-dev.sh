@@ -9,8 +9,8 @@ PID_FILE="${STATE_DIR}/manager.pid"
 LOG_FILE="${STATE_DIR}/manager.log"
 SCRIPT_PATH="${SCRIPT_DIR}/port-forward-dev.sh"
 
-SERVICES=(identity memory-gateway governance agent-runtime)
-LOCAL_PORTS=(9444 9445 9446 9447)
+SERVICES=(gateway identity memory-gateway governance agent-runtime)
+LOCAL_PORTS=(9443 9444 9445 9446 9447)
 REMOTE_PORT=8443
 CHILD_PIDS=()
 

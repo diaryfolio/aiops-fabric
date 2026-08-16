@@ -52,6 +52,13 @@ because it is a stateless local policy decision point with a narrow loopback API
 managed selection requires credentials, CA trust, explicit egress, conformance tests, version
 pinning, upgrade/rollback ownership, and a provider passport before production routing.
 
+The `openai` Helm profile deploys only the ViewSense `openai-adapter`; it does not create or manage
+an OpenAI account. Its Secret must be supplied by the platform secret controller. The development
+overlay permits public IPv4 HTTPS while excluding private, loopback, link-local, and reserved
+ranges. Production must replace that broad rule with an egress proxy or CNI FQDN policy restricted
+to `api.openai.com`, plus DNS/proxy failure tests. `make openai-disable` restores the mock route and
+deletes the development credential Secret and adapter resources.
+
 ## Sizing method
 
 Control-plane sizing is driven by concurrent requests and provider wait time. Inference sizing is driven by tokens, context length, batching, quantization, and model/GPU class:
@@ -68,7 +75,7 @@ Provider descriptors include locality, residency, classification ceiling, capabi
 
 ## Development workflow in this repository
 
-`scripts/k8s-deploy-dev.sh` builds the image, imports it to the active k3d cluster, creates generated Secrets, applies `deploy/kubernetes/base`, and waits for rollout in `viewsense-dev`. The base includes an independently addressed governance API and database with explicit NetworkPolicy. `scripts/k8s-test.sh` runs a namespaced smoke Job that validates provider admission and evidence alongside the core AI path. The scripts validate their fixed namespace before mutation.
+`scripts/k8s-deploy-dev.sh` builds the image, imports it to the active k3d cluster, creates generated Secrets, applies `deploy/kubernetes/base`, and waits for rollout in `viewsense-dev`. The base includes an independently addressed governance API and database with explicit NetworkPolicy. `make openai-enable` then prompts without echo, creates the provider Secret, and applies `deploy/kubernetes/overlays/openai`. `scripts/k8s-test.sh` runs a namespaced smoke Job that validates provider admission and evidence alongside the core AI path. The scripts validate their fixed namespace before mutation.
 
 ## Production gaps from the reference
 

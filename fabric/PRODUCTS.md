@@ -27,6 +27,7 @@ to execute it. `planned` is never presented as selectable production functionali
 | memory | PostgreSQL + pgvector | bundled | validated | canonical memory API, isolated database, deterministic test embeddings |
 | memory | Mem0 OSS or Platform | adapter | configuration-ready | credential-isolated adapter, tenant/owner pseudonymization, normalization |
 | LLM | deterministic OpenAI-compatible mock | bundled | validated | contract and failure testing only |
+| LLM | OpenAI API | adapter | configuration-ready | credential-isolated adapter, fixed model/endpoint, Helm and development Kustomize profile, manual live memory-grounding test |
 | LLM | vLLM or external OpenAI-compatible endpoint | external | configuration-ready | endpoint/audience/egress selection; certification remains environment-specific |
 | policy | built-in admission checks | bundled | validated | capability, residency, classification, expiry, revocation, evaluation gates |
 | policy | OPA | managed dependency | configuration-ready | local governance sidecar or external Data API, fail closed |

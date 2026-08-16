@@ -29,8 +29,10 @@ preserved_agent_db_password="$(existing_env_value VS_AGENT_DB_PASSWORD || true)"
 
 if [[ -f "${env_file}" && -f "${pki_dir}/ca.crt" && -f "${pki_dir}/governance/tls.crt" \
   && -f "${pki_dir}/agent-runtime/tls.crt" \
+  && -f "${pki_dir}/openai-adapter/tls.crt" \
   && -f "${runtime_dir}/clients.json" ]] \
   && grep -q '"ingestion"' "${runtime_dir}/clients.json" \
+  && grep -q '"openai-adapter"' "${runtime_dir}/clients.json" \
   && grep -q '"can_delegate_tenant"' "${runtime_dir}/clients.json" \
   && grep -q '^VS_GOVERNANCE_DB_PASSWORD=' "${env_file}" \
   && grep -q '^VS_AGENT_DB_PASSWORD=' "${env_file}"; then
@@ -56,7 +58,7 @@ openssl req -x509 -new -key "${pki_dir}/ca.key" -sha256 -days 30 \
   -subj "/O=ViewSense Development/CN=ViewSense Development CA" \
   -out "${pki_dir}/ca.crt"
 
-services=(identity gateway orchestrator ingestion llm-gateway memory-gateway memory-postgres mcp-gateway mock-llm mock-mcp governance agent-runtime smoke)
+services=(identity gateway orchestrator ingestion llm-gateway memory-gateway memory-postgres mcp-gateway mock-llm openai-adapter mock-mcp governance agent-runtime smoke)
 for service in "${services[@]}"; do
   service_dir="${pki_dir}/${service}"
   mkdir -p "${service_dir}"
@@ -116,7 +118,7 @@ cat >"${runtime_dir}/clients.json" <<EOF
   "gateway": {"secret": "${gateway_secret}", "can_delegate_tenant": true, "grants": {"orchestrator": ["orchestrate.invoke"]}},
   "orchestrator": {"secret": "${orchestrator_secret}", "can_delegate_tenant": true, "grants": {"memory-gateway": ["memory.read", "memory.write"], "llm-gateway": ["llm.invoke"], "mcp-gateway": ["mcp.invoke"]}},
   "ingestion": {"secret": "${ingestion_secret}", "can_delegate_tenant": true, "grants": {"memory-gateway": ["memory.write"]}},
-  "llm-gateway": {"secret": "${llm_gateway_secret}", "can_delegate_tenant": true, "grants": {"mock-llm": ["provider.invoke"]}},
+  "llm-gateway": {"secret": "${llm_gateway_secret}", "can_delegate_tenant": true, "grants": {"mock-llm": ["provider.invoke"], "openai-adapter": ["provider.invoke"]}},
   "memory-gateway": {"secret": "${memory_gateway_secret}", "can_delegate_tenant": true, "grants": {"memory-postgres": ["provider.invoke"]}},
   "mcp-gateway": {"secret": "${mcp_gateway_secret}", "can_delegate_tenant": true, "grants": {"mock-mcp": ["provider.invoke"]}},
   "smoke": {"secret": "${smoke_secret}", "tenant_id": "tenant-a", "grants": {"gateway": ["api.invoke"], "ingestion": ["ingest.write"], "memory-gateway": ["memory.read", "memory.write"], "mcp-gateway": ["mcp.admin", "mcp.invoke"], "governance": ["governance.admin", "governance.read", "evidence.write"], "agent-runtime": ["agent.run", "agent.approve"]}}

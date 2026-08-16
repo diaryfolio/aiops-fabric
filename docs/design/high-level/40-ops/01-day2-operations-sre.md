@@ -35,6 +35,12 @@ selected product operators and must be tested with the ViewSense conformance sui
 - token runaway: cancel request/workflow, enforce tenant stop-loss, quarantine route;
 - model quality/safety regression: pin previous provider/model policy, preserve evaluation evidence, notify owners.
 
+For an OpenAI route, 401/403 indicates credential/configuration failure and pages the route owner;
+429 is a capacity/quota signal and must not cause residency-unsafe fallback; timeout/5xx consumes
+the provider dependency budget. Rollback runs `make openai-disable` in development or promotes the
+previous signed route configuration in production. Rotate/revoke the provider key at OpenAI first,
+then synchronize the secret and restart only the adapter; verify callers and logs never contain it.
+
 ## Capacity and cost
 
 Review GPU saturation, batching, KV-cache pressure, database index health, queue depth, connector external quotas, and tenant cost weekly. Enforce per-tenant concurrency, token, memory-storage, and tool budgets. Cost-based routing is evaluated only after capability, security, residency, and SLO constraints.

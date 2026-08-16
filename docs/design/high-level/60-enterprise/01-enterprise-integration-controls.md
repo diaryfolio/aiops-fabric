@@ -85,7 +85,10 @@ audience/scoped tokens, signed Trust Envelope tenant delegation, external OIDC e
 built-in/OPA provider admission, append-only safe evidence metadata, durable bounded agent state,
 PostgreSQL/pgvector and Mem0 adapter boundaries, restricted pods, network policies, API schemas,
 profile rendering, and positive/negative smoke tests. Configuration-ready but environment-dependent:
-Keycloak/generic OIDC, SPIRE consumption architecture, OPA sidecar, Mem0, and collector routing.
+the credential-isolated OpenAI adapter, Keycloak/generic OIDC, SPIRE consumption architecture, OPA
+sidecar, Mem0, and collector routing. OpenAI acceptance additionally requires a provider project/key,
+residency and retention review, egress enforcement, spend limits, rotation, and the documented live
+memory-grounding test.
 Planned: workflow adapters, SCIM, signed third-party passports, evaluation runners/datasets,
 immutable evidence/audit export, full OTel instrumentation/exporters, external secrets, HA/DR,
 autoscaling, supply-chain admission, and ITSM. Production readiness requires selecting and testing
